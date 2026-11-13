@@ -344,6 +344,7 @@
   },
   "sales": {
     "title": "Sales & Invoices",
+    "new": "New Invoice",
     "newInvoice": "New Invoice",
     "editInvoice": "Edit Invoice",
     "empty": "No invoices found",

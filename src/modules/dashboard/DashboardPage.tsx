@@ -4,14 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../../database/db'
 import { getDashboardSummary, getLast7DaysRevenue } from './DashboardRepository'
 import { PageSpinner } from '../../components/ui/Spinner'
+import { useCurrency } from '../../hooks/useCurrency'
+import { formatCurrency } from '../../utils/format'
 import type { Sale } from '../../database/schema'
 import type { Patient } from '../../database/schema'
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function fmt(n: number) {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -59,7 +55,7 @@ function KpiTile({
 
 // ── Revenue Bar Chart (pure CSS) ──────────────────────────────────────────────
 
-function RevenueChart({ data }: { data: { date: string; revenue: number }[] }) {
+function RevenueChart({ data, fmtCurrency }: { data: { date: string; revenue: number }[]; fmtCurrency: (n: number) => string }) {
   const { t } = useTranslation()
   const max = Math.max(...data.map(d => d.revenue), 1)
 
@@ -80,7 +76,7 @@ function RevenueChart({ data }: { data: { date: string; revenue: number }[] }) {
               <div
                 className="w-full rounded-t-md bg-blue-500 dark:bg-blue-600 transition-all group-hover:bg-blue-700 dark:group-hover:bg-blue-500"
                 style={{ height: `${Math.max((revenue / max) * 100, revenue > 0 ? 8 : 2)}%` }}
-                title={fmt(revenue)}
+                title={fmtCurrency(revenue)}
               />
             </div>
             <span
@@ -154,6 +150,8 @@ function PatientRow({ patient }: { patient: Patient }) {
 export default function DashboardPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { code: currency } = useCurrency()
+  const fmt = (n: number) => formatCurrency(n, currency)
 
   const summary = useLiveQuery(() => getDashboardSummary(db), [])
   const chartData = useLiveQuery(() => getLast7DaysRevenue(db), [])
@@ -278,7 +276,7 @@ export default function DashboardPage() {
       <div className="grid md:grid-cols-2 gap-5">
         {/* Revenue sparkline */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-          <RevenueChart data={chartData} />
+          <RevenueChart data={chartData} fmtCurrency={fmt} />
         </div>
 
         {/* Pending orders */}
