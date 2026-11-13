@@ -12,11 +12,11 @@ export const FrameFormSchema = z.object({
   name:         z.string().min(1, 'اسم المنتج مطلوب').max(120),
   sellingPrice: z.preprocess(
     v => (v === '' || v == null ? undefined : Number(v)),
-    z.number({ required_error: 'السعر مطلوب' }).min(0, 'السعر يجب أن يكون 0 أو أكثر'),
+    z.number().min(0, 'السعر يجب أن يكون 0 أو أكثر'),
   ),
   quantity:     z.preprocess(
     v => (v === '' || v == null ? undefined : Number(v)),
-    z.number({ required_error: 'الكمية مطلوبة' }).int().min(0, 'الكمية يجب أن تكون 0 أو أكثر'),
+    z.number().int().min(0, 'الكمية يجب أن تكون 0 أو أكثر'),
   ),
   // kept optional for backwards compat (edit existing frames)
   sku:         optStr(),
