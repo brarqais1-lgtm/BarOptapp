@@ -3,6 +3,7 @@ import type { Patient } from '../../../database/schema'
 import type { PatientFinancialSummary } from '../financial.service'
 import { formatCurrency } from '../../../utils/format'
 import { calcAge } from '../../../utils/date'
+import { useCurrency } from '../../../hooks/useCurrency'
 
 interface OverviewTabProps {
   patient: Patient
@@ -13,8 +14,7 @@ interface OverviewTabProps {
 
 export function OverviewTab({ patient, financial, examinationCount, locale }: OverviewTabProps) {
   const { t } = useTranslation()
-  const isAr = locale.startsWith('ar')
-  const currency = isAr ? 'SAR' : 'SAR'
+  const { code: currency } = useCurrency()
   const fmt = (n: number) => formatCurrency(n, currency, locale)
 
   return (

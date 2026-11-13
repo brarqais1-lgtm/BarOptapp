@@ -1,5 +1,5 @@
 /** Format a number as currency */
-export function formatCurrency(amount: number, currency = 'SAR', locale = 'ar-SA'): string {
+export function formatCurrency(amount: number, currency = 'IQD', locale = 'ar-IQ'): string {
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,

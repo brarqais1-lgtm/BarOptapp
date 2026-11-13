@@ -3,6 +3,7 @@ import type { Patient } from '../../database/schema'
 import type { PatientFinancialSummary } from './financial.service'
 import { calcAge } from '../../utils/date'
 import { formatCurrency } from '../../utils/format'
+import { useCurrency } from '../../hooks/useCurrency'
 
 interface PrintViewProps {
   patient: Patient
@@ -19,7 +20,7 @@ export function PrintView({ patient, financial, examinationCount }: PrintViewPro
   const { t, i18n } = useTranslation()
   const isAr = i18n.language === 'ar'
   const locale = isAr ? 'ar-SA' : 'en-US'
-  const currency = 'SAR'
+  const { code: currency } = useCurrency()
 
   return (
     <div
