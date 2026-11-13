@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getInventoryStats, type InventoryStats } from './InventoryRepository'
-
-const MOVEMENT_LABELS: Record<string, string> = {
-  opening: 'Opening Stock', stock_in: 'Stock In', stock_out: 'Stock Out',
-  adjustment_in: 'Adj. In', adjustment_out: 'Adj. Out',
-  damaged: 'Damaged', returned: 'Returned',
-}
+import { db } from '../../database/db'
 
 export function InventoryDashboard() {
   const { t } = useTranslation()
   const [stats, setStats] = useState<InventoryStats | null>(null)
+  const [productNames, setProductNames] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getInventoryStats().then(s => { setStats(s); setLoading(false) }).catch(() => setLoading(false))
+    Promise.all([
+      db.frames.filter(fr => !fr.deletedAt).toArray(),
+      db.lenses.filter(l => !l.deletedAt).toArray(),
+    ]).then(([frames, lenses]) => {
+      const map: Record<string, string> = {}
+      frames.forEach(fr => { if (fr.id) map[fr.id] = fr.name })
+      lenses.forEach(l => { if (l.id) map[l.id] = l.name })
+      setProductNames(map)
+    })
   }, [])
 
   if (loading) {
@@ -56,9 +61,9 @@ export function InventoryDashboard() {
                 {stats.recentMovements.map(m => (
                   <tr key={m.id} className="bg-white dark:bg-slate-900">
                     <td className="px-4 py-2.5">
-                      <MovementBadge type={m.movementType} label={MOVEMENT_LABELS[m.movementType] ?? m.movementType} />
+                      <MovementBadge type={m.movementType} label={t(`inventory.movements.${m.movementType}`, { defaultValue: m.movementType })} />
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400 capitalize">{m.itemType} · {m.itemId.slice(0, 8)}</td>
+                    <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{productNames[m.itemId] ?? m.itemId}</td>
                     <td className={`px-4 py-2.5 text-end font-mono font-medium ${m.quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
                     </td>

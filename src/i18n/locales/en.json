@@ -278,7 +278,9 @@
       "adjustment_in": "Adjustment In",
       "adjustment_out": "Adjustment Out",
       "damaged": "Damaged",
-      "returned": "Returned"
+      "returned": "Returned",
+      "qtyBefore": "Qty Before",
+      "qtyAfter": "Qty After"
     },
     "stocktaking": {
       "title": "Stocktaking Sessions",

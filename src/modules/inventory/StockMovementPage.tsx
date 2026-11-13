@@ -1,19 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getMovements, type MovementFilters } from './InventoryRepository'
+import { db } from '../../database/db'
 import type { InventoryMovement } from '../../database/schema'
-
-const MOVEMENT_LABELS: Record<string, string> = {
-  opening: 'Opening', stock_in: 'Stock In', stock_out: 'Stock Out',
-  adjustment_in: 'Adj. In', adjustment_out: 'Adj. Out',
-  damaged: 'Damaged', returned: 'Returned',
-  purchase: 'Purchase', sale: 'Sale', return: 'Return',
-  adjustment: 'Adjustment', transfer: 'Transfer',
-}
 
 export function StockMovementPage() {
   const { t } = useTranslation()
   const [movements, setMovements] = useState<InventoryMovement[]>([])
+  const [productNames, setProductNames] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<MovementFilters>({ limit: 100 })
 
@@ -22,7 +16,18 @@ export function StockMovementPage() {
     getMovements(f).then(m => { setMovements(m); setLoading(false) }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { load(filters) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load(filters)
+    Promise.all([
+      db.frames.filter(fr => !fr.deletedAt).toArray(),
+      db.lenses.filter(l => !l.deletedAt).toArray(),
+    ]).then(([frames, lenses]) => {
+      const map: Record<string, string> = {}
+      frames.forEach(fr => { if (fr.id) map[fr.id] = fr.name })
+      lenses.forEach(l => { if (l.id) map[l.id] = l.name })
+      setProductNames(map)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateFilter = (patch: Partial<MovementFilters>) => {
     const next = { ...filters, ...patch }
@@ -85,8 +90,8 @@ export function StockMovementPage() {
                 <th className="px-4 py-2.5 text-start font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.type')}</th>
                 <th className="px-4 py-2.5 text-start font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.product')}</th>
                 <th className="px-4 py-2.5 text-end font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.qty')}</th>
-                <th className="px-4 py-2.5 text-end font-medium text-slate-600 dark:text-slate-300">{t('inventory.stock.qty')} Before</th>
-                <th className="px-4 py-2.5 text-end font-medium text-slate-600 dark:text-slate-300">{t('inventory.stock.qty')} After</th>
+                <th className="px-4 py-2.5 text-end font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.qtyBefore')}</th>
+                <th className="px-4 py-2.5 text-end font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.qtyAfter')}</th>
                 <th className="px-4 py-2.5 text-start font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.reason')}</th>
                 <th className="px-4 py-2.5 text-end font-medium text-slate-600 dark:text-slate-300">{t('inventory.movements.date')}</th>
               </tr>
@@ -101,10 +106,10 @@ export function StockMovementPage() {
                         isIn ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                              : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
                       }`}>
-                        {isIn ? '▲' : '▼'} {MOVEMENT_LABELS[m.movementType] ?? m.movementType}
+                        {isIn ? '▲' : '▼'} {t(`inventory.movements.${m.movementType}`, { defaultValue: m.movementType })}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400 capitalize">{m.itemType}</td>
+                    <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{productNames[m.itemId] ?? m.itemId}</td>
                     <td className={`px-4 py-2.5 text-end font-mono font-medium ${isIn ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {isIn ? `+${m.quantity}` : m.quantity}
                     </td>

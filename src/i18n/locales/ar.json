@@ -278,7 +278,9 @@
       "adjustment_in": "تعديل زيادة",
       "adjustment_out": "تعديل نقص",
       "damaged": "تالف",
-      "returned": "مرتجع"
+      "returned": "مرتجع",
+      "qtyBefore": "الكمية قبل",
+      "qtyAfter": "الكمية بعد"
     },
     "stocktaking": {
       "title": "جلسات الجرد",
