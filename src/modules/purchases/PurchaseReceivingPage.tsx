@@ -11,6 +11,7 @@ export default function PurchaseReceivingPage() {
   const { id } = useParams<{ id: string }>()
   const [purchase, setPurchase] = useState<Purchase | null>(null)
   const [items, setItems] = useState<PurchaseItem[]>([])
+  const [loadingItems, setLoadingItems] = useState(true)
   const [qtys, setQtys] = useState<Record<string, number>>({})
   const [receivedDate, setReceivedDate] = useState(new Date().toISOString().slice(0, 10))
   const [error, setError] = useState('')
@@ -24,6 +25,7 @@ export default function PurchaseReceivingPage() {
       db.purchaseItems.where('purchaseId').equals(id).toArray().then(its => {
         const outstanding = its.filter(i => i.orderedQty > i.receivedQty)
         setItems(outstanding)
+        setLoadingItems(false)
         const initial: Record<string, number> = {}
         outstanding.forEach(i => { initial[i.id] = i.orderedQty - i.receivedQty })
         setQtys(initial)
@@ -55,7 +57,7 @@ export default function PurchaseReceivingPage() {
     }
   }
 
-  if (items.length === 0) {
+  if (!loadingItems && items.length === 0) {
     return (
       <div className="p-4 max-w-2xl mx-auto text-center space-y-4">
         <p className="text-gray-500">{t('purchases.allReceived')}</p>

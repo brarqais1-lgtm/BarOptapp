@@ -182,6 +182,7 @@
     }
   },
   "catalog": {
+    "frame": "Frames", "lens": "Lenses",
     "items": "items", "sku": "SKU", "name": "Name", "brand": "Brand",
     "model": "Model", "barcode": "Barcode", "material": "Material",
     "color": "Color", "category": "Category", "status": "Status",

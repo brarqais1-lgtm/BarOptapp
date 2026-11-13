@@ -21,6 +21,7 @@ export default function PurchaseDetailPage() {
   const [purchase, setPurchase] = useState<Purchase | null>(null)
   const [supplier, setSupplier] = useState<Supplier | null>(null)
   const [movements, setMovements] = useState<InventoryMovement[]>([])
+  const [productNames, setProductNames] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
 
   const items = useLiveQuery<PurchaseItem[]>(() =>
@@ -34,6 +35,15 @@ export default function PurchaseDetailPage() {
       if (p) db.suppliers.get(p.supplierId).then(s => setSupplier(s ?? null))
     })
     getPurchaseMovements(id).then(setMovements)
+    Promise.all([
+      db.frames.filter(fr => !fr.deletedAt).toArray(),
+      db.lenses.filter(l => !l.deletedAt).toArray(),
+    ]).then(([frames, lenses]) => {
+      const map: Record<string, string> = {}
+      frames.forEach(fr => { if (fr.id) map[fr.id] = fr.name })
+      lenses.forEach(l => { if (l.id) map[l.id] = l.name })
+      setProductNames(map)
+    })
   }, [id])
 
   if (!purchase) return <div className="p-4 text-gray-500">{t('common.loading')}</div>
@@ -176,15 +186,15 @@ export default function PurchaseDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-3 text-start">{t('inventory.product')}</th>
-                  <th className="px-4 py-3 text-end">{t('inventory.qty')}</th>
-                  <th className="px-4 py-3 text-start">{t('inventory.date')}</th>
+                  <th className="px-4 py-3 text-start">{t('inventory.movements.product')}</th>
+                  <th className="px-4 py-3 text-end">{t('inventory.movements.qty')}</th>
+                  <th className="px-4 py-3 text-start">{t('inventory.movements.date')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {movements.map(m => (
                   <tr key={m.id}>
-                    <td className="px-4 py-3">{m.itemType}/{m.itemId.slice(0, 8)}</td>
+                    <td className="px-4 py-3">{productNames[m.itemId] ?? m.itemId.slice(0, 8)}</td>
                     <td className="px-4 py-3 text-end font-mono">+{m.quantity}</td>
                     <td className="px-4 py-3">{m.movementDate.slice(0, 10)}</td>
                   </tr>
