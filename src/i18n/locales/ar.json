@@ -594,16 +594,26 @@
     "tabs": {
       "clinic": "معلومات المحل",
       "financial": "الإعدادات المالية",
-      "appearance": "المظهر"
+      "appearance": "المظهر",
+      "invoices": "الفواتير",
+      "backup": "النسخ الاحتياطي"
     },
     "clinic": {
       "name": "اسم المحل / العيادة",
       "namePlaceholder": "مثال: محل النور للنظارات",
       "phone": "رقم الهاتف",
-      "phonePlaceholder": "مثال: 0501234567",
+      "phonePlaceholder": "مثال: 07701234567",
+      "whatsapp": "واتساب",
+      "whatsappPlaceholder": "مثال: 07701234567",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "example@clinic.com",
+      "website": "الموقع الإلكتروني",
+      "websitePlaceholder": "https://www.example.com",
       "address": "العنوان",
       "addressPlaceholder": "الشارع، المدينة، المنطقة",
-      "logo": "الشعار",
+      "description": "وصف المنشأة",
+      "descriptionPlaceholder": "متخصصون في العدسات والنظارات الطبية",
+      "logo": "شعار المنشأة",
       "uploadLogo": "رفع صورة الشعار",
       "removeLogo": "إزالة الشعار",
       "logoHint": "PNG أو JPG، يظهر على الفواتير المطبوعة"
@@ -612,6 +622,10 @@
       "currency": "العملة",
       "taxRate": "نسبة الضريبة الافتراضية",
       "taxRateHint": "تُطبَّق افتراضياً على الفواتير الجديدة (يمكن تعديلها لكل فاتورة)",
+      "invoicePrefix": "بادئة رقم الفاتورة",
+      "invoicePrefixHint": "مثال: INV- · الرقم التسلسلي يُضاف تلقائياً",
+      "lowStockThreshold": "حد تنبيه المخزون المنخفض",
+      "lowStockThresholdHint": "يظهر تنبيه عندما تنخفض الكمية إلى هذا الحد أو أقل",
       "currencies": {
         "SAR": "الريال السعودي",
         "USD": "الدولار الأمريكي",
@@ -627,7 +641,39 @@
     },
     "appearance": {
       "language": "اللغة",
-      "theme": "المظهر"
+      "theme": "المظهر",
+      "fontSize": "حجم الخط",
+      "fontSizes": {
+        "small": "صغير",
+        "medium": "متوسط",
+        "large": "كبير"
+      }
+    },
+    "invoices": {
+      "footer": "نص تذييل الفاتورة",
+      "footerPlaceholder": "مثال: شكراً لزيارتكم · لا يُعاد المبلغ المدفوع",
+      "showLogo": "عرض الشعار في الفواتير المطبوعة",
+      "paperSize": "حجم الورق",
+      "paperSizes": {
+        "A4": "A4 (قياسي)",
+        "A5": "A5 (نصف صفحة)",
+        "receipt": "80mm (إيصال)"
+      }
+    },
+    "backup": {
+      "exportTitle": "تصدير النسخة الاحتياطية",
+      "exportDesc": "تنزيل نسخة كاملة من جميع البيانات (المرضى، الفواتير، المخزون، الإعدادات)",
+      "importTitle": "استعادة من نسخة احتياطية",
+      "importDesc": "استبدال جميع البيانات الحالية بنسخة احتياطية سابقة",
+      "importWarning": "تحذير: سيتم حذف جميع البيانات الحالية واستبدالها. هذا الإجراء لا يمكن التراجع عنه.",
+      "selectFile": "اختر ملف النسخة الاحتياطية",
+      "exportBtn": "تصدير النسخة الاحتياطية",
+      "importBtn": "استعادة البيانات",
+      "exporting": "جاري التصدير...",
+      "importing": "جاري الاستعادة...",
+      "exportSuccess": "تم تصدير النسخة الاحتياطية بنجاح",
+      "importSuccess": "تمت الاستعادة بنجاح",
+      "lastExport": "آخر تصدير"
     }
   },
   "backup": {

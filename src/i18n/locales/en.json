@@ -594,16 +594,26 @@
     "tabs": {
       "clinic": "Clinic Info",
       "financial": "Financial",
-      "appearance": "Appearance"
+      "appearance": "Appearance",
+      "invoices": "Invoices",
+      "backup": "Backup"
     },
     "clinic": {
       "name": "Store / Clinic Name",
       "namePlaceholder": "e.g. Al-Noor Optical",
       "phone": "Phone Number",
-      "phonePlaceholder": "e.g. +966 50 000 0000",
+      "phonePlaceholder": "e.g. +964 770 000 0000",
+      "whatsapp": "WhatsApp",
+      "whatsappPlaceholder": "e.g. +964 770 000 0000",
+      "email": "Email Address",
+      "emailPlaceholder": "example@clinic.com",
+      "website": "Website",
+      "websitePlaceholder": "https://www.example.com",
       "address": "Address",
       "addressPlaceholder": "Street, City, Region",
-      "logo": "Logo",
+      "description": "Business Description",
+      "descriptionPlaceholder": "Specialists in optical lenses and eyewear",
+      "logo": "Business Logo",
       "uploadLogo": "Upload logo image",
       "removeLogo": "Remove logo",
       "logoHint": "PNG or JPG, shown on printed invoices"
@@ -612,6 +622,10 @@
       "currency": "Currency",
       "taxRate": "Default Tax Rate",
       "taxRateHint": "Applied by default on new invoices (can be changed per invoice)",
+      "invoicePrefix": "Invoice Number Prefix",
+      "invoicePrefixHint": "e.g. INV- · Sequential number is added automatically",
+      "lowStockThreshold": "Low Stock Alert Threshold",
+      "lowStockThresholdHint": "Show alert when quantity drops to this level or below",
       "currencies": {
         "SAR": "Saudi Riyal",
         "USD": "US Dollar",
@@ -627,7 +641,39 @@
     },
     "appearance": {
       "language": "Language",
-      "theme": "Theme"
+      "theme": "Theme",
+      "fontSize": "Font Size",
+      "fontSizes": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large"
+      }
+    },
+    "invoices": {
+      "footer": "Invoice Footer Text",
+      "footerPlaceholder": "e.g. Thank you for your visit · No refunds after purchase",
+      "showLogo": "Show logo on printed invoices",
+      "paperSize": "Paper Size",
+      "paperSizes": {
+        "A4": "A4 (Standard)",
+        "A5": "A5 (Half page)",
+        "receipt": "80mm (Receipt)"
+      }
+    },
+    "backup": {
+      "exportTitle": "Export Backup",
+      "exportDesc": "Download a full copy of all data (patients, invoices, inventory, settings)",
+      "importTitle": "Restore from Backup",
+      "importDesc": "Replace all current data with a previous backup",
+      "importWarning": "Warning: All current data will be deleted and replaced. This action cannot be undone.",
+      "selectFile": "Choose backup file",
+      "exportBtn": "Export Backup",
+      "importBtn": "Restore Data",
+      "exporting": "Exporting...",
+      "importing": "Restoring...",
+      "exportSuccess": "Backup exported successfully",
+      "importSuccess": "Data restored successfully",
+      "lastExport": "Last export"
     }
   },
   "backup": {
