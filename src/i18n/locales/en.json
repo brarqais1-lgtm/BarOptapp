@@ -15,13 +15,21 @@
     "allStatuses": "All Statuses"
   },
   "nav": {
-    "dashboard": "Dashboard", "patients": "Patients",
+    "dashboard": "Home", "patients": "Patients",
     "examinations": "Eye Exam", "frames": "Frames",
     "lenses": "Lenses", "inventory": "Inventory",
     "suppliers": "Suppliers", "purchases": "Purchases",
     "sales": "Sales",
     "accounts": "Accounts", "expenses": "Expenses",
-    "reports": "Reports", "settings": "Settings"
+    "reports": "Reports", "settings": "Settings",
+    "more": "More", "allPages": "All Pages",
+    "sections": {
+      "clinical": "Clinical",
+      "catalog": "Catalog & Inventory",
+      "purchasing": "Suppliers & Purchasing",
+      "finance": "Sales & Finance",
+      "system": "System"
+    }
   },
   "patients": {
     "title": "Patients", "new": "New Patient", "total": "Total Patients",

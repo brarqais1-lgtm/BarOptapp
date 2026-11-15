@@ -27,9 +27,16 @@ export function AppLayout() {
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar (mobile only) */}
-        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-          <div className="w-7 h-7 rounded-lg bg-blue-700 flex items-center justify-center text-white font-bold text-sm">B</div>
-          <span className="font-semibold text-slate-900 dark:text-white text-sm">{t('app.name')}</span>
+        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30">
+          <div className="w-8 h-8 rounded-xl bg-blue-700 flex items-center justify-center text-white font-bold text-sm shrink-0">B</div>
+          <span className="font-bold text-slate-900 dark:text-white text-base flex-1">{t('app.name')}</span>
+          <button
+            onClick={() => navigate('/patients/new')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white text-xs font-semibold rounded-xl active:bg-blue-800 transition-colors"
+          >
+            <span className="text-sm">+</span>
+            <span>{t('patients.new')}</span>
+          </button>
         </header>
 
         {/* Page content */}

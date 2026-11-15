@@ -15,13 +15,21 @@
     "allStatuses": "كل الحالات"
   },
   "nav": {
-    "dashboard": "لوحة التحكم", "patients": "المرضى",
+    "dashboard": "الرئيسية", "patients": "المرضى",
     "examinations": "فحص البصر", "frames": "الإطارات",
     "lenses": "العدسات", "inventory": "المخزون",
     "suppliers": "الموردون", "purchases": "المشتريات",
     "sales": "المبيعات",
     "accounts": "الحسابات", "expenses": "المصاريف",
-    "reports": "التقارير", "settings": "الإعدادات"
+    "reports": "التقارير", "settings": "الإعدادات",
+    "more": "المزيد", "allPages": "جميع الصفحات",
+    "sections": {
+      "clinical": "الجانب الطبي",
+      "catalog": "الكتالوج والمخزون",
+      "purchasing": "الموردون والمشتريات",
+      "finance": "المبيعات والمالية",
+      "system": "النظام"
+    }
   },
   "patients": {
     "title": "المرضى", "new": "مريض جديد", "total": "إجمالي المرضى",
