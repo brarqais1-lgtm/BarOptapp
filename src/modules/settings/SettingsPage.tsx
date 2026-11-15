@@ -563,16 +563,36 @@ function InvoicesTab() {
 
 // ── Tab: Backup ───────────────────────────────────────────────────────────────
 
+type BackupPreview = {
+  file: import('../../services/backup.service').BackupFile
+  patients: number
+  createdAt: string
+}
+
 function BackupTab() {
   const { t } = useTranslation()
   const importRef = useRef<HTMLInputElement>(null)
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [preview, setPreview] = useState<BackupPreview | null>(null)
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+  const [lastBackup, setLastBackup] = useState<string | null>(() => {
+    try { return localStorage.getItem('baropt-last-backup') } catch { return null }
+  })
+
+  const dbCounts = useLiveQuery(async () => {
+    const [patients, frames, lenses, sales] = await Promise.all([
+      db.patients.filter(p => !p.deletedAt).count(),
+      db.frames.filter(f => !f.deletedAt).count(),
+      db.lenses.filter(l => !l.deletedAt).count(),
+      db.sales.filter(s => !s.deletedAt).count(),
+    ])
+    return { patients, frames, lenses, sales }
+  }, [])
 
   function showMsg(text: string, type: 'success' | 'error') {
     setMessage({ text, type })
-    setTimeout(() => setMessage(null), 4000)
+    setTimeout(() => setMessage(null), 5000)
   }
 
   async function handleExport() {
@@ -580,6 +600,9 @@ function BackupTab() {
     try {
       const backup = await createBackup()
       downloadBackup(backup)
+      const now = new Date().toLocaleString('ar-IQ')
+      try { localStorage.setItem('baropt-last-backup', now) } catch { /* ignore */ }
+      setLastBackup(now)
       showMsg(t('settings.backup.exportSuccess'), 'success')
     } catch (e) {
       showMsg((e as Error).message, 'error')
@@ -588,17 +611,33 @@ function BackupTab() {
     }
   }
 
-  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setImporting(true)
     try {
       const text = await readFileAsText(file)
       const raw = JSON.parse(text)
       const backup = await validateBackupFile(raw)
-      const result = await restoreBackup(backup, { overwrite: true })
+      setPreview({
+        file: backup,
+        patients: backup.manifest.recordCounts['patients'] ?? 0,
+        createdAt: backup.manifest.createdAt,
+      })
+    } catch (e) {
+      showMsg((e as Error).message, 'error')
+    } finally {
+      if (importRef.current) importRef.current.value = ''
+    }
+  }
+
+  async function handleConfirmImport() {
+    if (!preview) return
+    setImporting(true)
+    try {
+      const result = await restoreBackup(preview.file, { overwrite: true })
       if (result.success) {
         showMsg(t('settings.backup.importSuccess'), 'success')
+        setPreview(null)
       } else {
         showMsg(result.error, 'error')
       }
@@ -606,12 +645,11 @@ function BackupTab() {
       showMsg((e as Error).message, 'error')
     } finally {
       setImporting(false)
-      if (importRef.current) importRef.current.value = ''
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {message && (
         <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
           message.type === 'success'
@@ -622,10 +660,36 @@ function BackupTab() {
         </div>
       )}
 
+      {/* Stats */}
+      {dbCounts && (
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: t('nav.patients'), value: dbCounts.patients, icon: '👤' },
+            { label: t('nav.sales'), value: dbCounts.sales, icon: '🧾' },
+            { label: t('nav.frames'), value: dbCounts.frames, icon: '🕶' },
+            { label: t('nav.lenses'), value: dbCounts.lenses, icon: '🔬' },
+          ].map(stat => (
+            <div key={stat.label} className="rounded-xl bg-slate-50 dark:bg-slate-800 px-4 py-3 flex items-center gap-3">
+              <span className="text-xl">{stat.icon}</span>
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+                <p className="text-lg font-bold text-slate-800 dark:text-white">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {lastBackup && (
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
+          ✅ {t('settings.backup.lastBackup')}: {lastBackup}
+        </p>
+      )}
+
       {/* Export */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+      <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 p-5">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-xl flex-shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-2xl shrink-0">
             📤
           </div>
           <div className="flex-1 min-w-0">
@@ -638,7 +702,7 @@ function BackupTab() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="px-4 py-2 rounded-xl bg-blue-700 text-white text-sm font-medium hover:bg-blue-800 disabled:opacity-50 transition-colors"
+              className="px-5 py-2.5 rounded-xl bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 disabled:opacity-50 transition-colors"
             >
               {exporting ? t('settings.backup.exporting') : t('settings.backup.exportBtn')}
             </button>
@@ -646,40 +710,75 @@ function BackupTab() {
         </div>
       </div>
 
-      {/* Import */}
-      <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 p-5">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl flex-shrink-0">
-            📥
+      {/* Import — preview dialog */}
+      {preview ? (
+        <div className="rounded-xl border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+            ⚠️ {t('settings.backup.confirmTitle')}
+          </h3>
+          <div className="text-xs text-orange-700 dark:text-orange-400 space-y-1">
+            <p>{t('settings.backup.backupDate')}: {new Date(preview.createdAt).toLocaleString('ar-IQ')}</p>
+            <p>{t('settings.backup.patientsInBackup')}: <strong>{preview.patients}</strong></p>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
-              {t('settings.backup.importTitle')}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-              {t('settings.backup.importDesc')}
-            </p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mb-4 font-medium">
-              ⚠️ {t('settings.backup.importWarning')}
-            </p>
-            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-colors ${
-              importing
-                ? 'opacity-50 cursor-not-allowed border-slate-200 text-slate-400'
-                : 'border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-            }`}>
-              <span>📂</span>
-              <span>{importing ? t('settings.backup.importing') : t('settings.backup.selectFile')}</span>
-              <input
-                ref={importRef}
-                type="file"
-                accept=".json"
-                className="sr-only"
-                onChange={handleImport}
-                disabled={importing}
-              />
-            </label>
+          <p className="text-xs font-semibold text-red-700 dark:text-red-400">
+            {t('settings.backup.confirmWarning')}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleConfirmImport}
+              disabled={importing}
+              className="flex-1 py-2.5 rounded-xl bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 disabled:opacity-50 transition-colors"
+            >
+              {importing ? t('settings.backup.importing') : t('settings.backup.confirmBtn')}
+            </button>
+            <button
+              onClick={() => setPreview(null)}
+              disabled={importing}
+              className="flex-1 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
           </div>
         </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl shrink-0">
+              📥
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                {t('settings.backup.importTitle')}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                {t('settings.backup.importDesc')}
+              </p>
+              <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <span>📂</span>
+                <span>{t('settings.backup.selectFile')}</span>
+                <input
+                  ref={importRef}
+                  type="file"
+                  accept=".json"
+                  className="sr-only"
+                  onChange={handleFileSelect}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* How to transfer */}
+      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 space-y-2">
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+          📱 {t('settings.backup.howToTransfer')}
+        </p>
+        <ol className="text-xs text-slate-500 dark:text-slate-400 space-y-1 list-decimal list-inside">
+          <li>{t('settings.backup.step1')}</li>
+          <li>{t('settings.backup.step2')}</li>
+          <li>{t('settings.backup.step3')}</li>
+        </ol>
       </div>
     </div>
   )

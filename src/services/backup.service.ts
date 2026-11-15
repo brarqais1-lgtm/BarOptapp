@@ -47,9 +47,11 @@ export async function encryptPayload(_payload: string, _password: string): Promi
 export async function createBackup(db: BarOptDB = globalDb): Promise<BackupFile> {
   const tableNames = [
     'patients', 'eyeExaminations', 'prescriptions',
-    'frames', 'lenses', 'inventoryMovements',
-    'sales', 'saleItems', 'payments',
-    'expenses', 'suppliers', 'purchases',
+    'patientMedicalHistory', 'patientOcularHistory', 'patientSymptoms',
+    'productCategories', 'frames', 'lenses', 'inventoryMovements',
+    'stocktakingSessions', 'stocktakingItems',
+    'sales', 'saleItems', 'payments', 'saleReturns', 'saleReturnItems',
+    'expenses', 'suppliers', 'purchases', 'purchaseItems',
     'cashTransactions', 'settings', 'auditLogs',
   ] as const
 
@@ -131,7 +133,6 @@ export async function restoreBackup(
   db: BarOptDB = globalDb,
 ): Promise<RestoreResult> {
   if (!options.overwrite) {
-    // Check if any table has existing data
     const patientCount = await db.patients.count()
     if (patientCount > 0) {
       return {
@@ -146,46 +147,64 @@ export async function restoreBackup(
       'rw',
       [
         db.patients, db.eyeExaminations, db.prescriptions,
-        db.frames, db.lenses, db.inventoryMovements,
-        db.sales, db.saleItems, db.payments,
-        db.expenses, db.suppliers, db.purchases,
+        db.patientMedicalHistory, db.patientOcularHistory, db.patientSymptoms,
+        db.productCategories, db.frames, db.lenses, db.inventoryMovements,
+        db.stocktakingSessions, db.stocktakingItems,
+        db.sales, db.saleItems, db.payments, db.saleReturns, db.saleReturnItems,
+        db.expenses, db.suppliers, db.purchases, db.purchaseItems,
         db.cashTransactions, db.settings, db.auditLogs,
       ],
       async () => {
-        // Clear all tables first
         await db.patients.clear()
         await db.eyeExaminations.clear()
         await db.prescriptions.clear()
+        await db.patientMedicalHistory.clear()
+        await db.patientOcularHistory.clear()
+        await db.patientSymptoms.clear()
+        await db.productCategories.clear()
         await db.frames.clear()
         await db.lenses.clear()
         await db.inventoryMovements.clear()
+        await db.stocktakingSessions.clear()
+        await db.stocktakingItems.clear()
         await db.sales.clear()
         await db.saleItems.clear()
         await db.payments.clear()
+        await db.saleReturns.clear()
+        await db.saleReturnItems.clear()
         await db.expenses.clear()
         await db.suppliers.clear()
         await db.purchases.clear()
+        await db.purchaseItems.clear()
         await db.cashTransactions.clear()
         await db.settings.clear()
         await db.auditLogs.clear()
 
-        // Bulk-insert each table
         const d = backup.data
-        if (d.patients)           await db.patients.bulkAdd(d.patients as never)
-        if (d.eyeExaminations)    await db.eyeExaminations.bulkAdd(d.eyeExaminations as never)
-        if (d.prescriptions)      await db.prescriptions.bulkAdd(d.prescriptions as never)
-        if (d.frames)             await db.frames.bulkAdd(d.frames as never)
-        if (d.lenses)             await db.lenses.bulkAdd(d.lenses as never)
-        if (d.inventoryMovements) await db.inventoryMovements.bulkAdd(d.inventoryMovements as never)
-        if (d.sales)              await db.sales.bulkAdd(d.sales as never)
-        if (d.saleItems)          await db.saleItems.bulkAdd(d.saleItems as never)
-        if (d.payments)           await db.payments.bulkAdd(d.payments as never)
-        if (d.expenses)           await db.expenses.bulkAdd(d.expenses as never)
-        if (d.suppliers)          await db.suppliers.bulkAdd(d.suppliers as never)
-        if (d.purchases)          await db.purchases.bulkAdd(d.purchases as never)
-        if (d.cashTransactions)   await db.cashTransactions.bulkAdd(d.cashTransactions as never)
-        if (d.settings)           await db.settings.bulkAdd(d.settings as never)
-        if (d.auditLogs)          await db.auditLogs.bulkAdd(d.auditLogs as never)
+        if (d.patients)              await db.patients.bulkAdd(d.patients as never)
+        if (d.eyeExaminations)       await db.eyeExaminations.bulkAdd(d.eyeExaminations as never)
+        if (d.prescriptions)         await db.prescriptions.bulkAdd(d.prescriptions as never)
+        if (d.patientMedicalHistory) await db.patientMedicalHistory.bulkAdd(d.patientMedicalHistory as never)
+        if (d.patientOcularHistory)  await db.patientOcularHistory.bulkAdd(d.patientOcularHistory as never)
+        if (d.patientSymptoms)       await db.patientSymptoms.bulkAdd(d.patientSymptoms as never)
+        if (d.productCategories)     await db.productCategories.bulkAdd(d.productCategories as never)
+        if (d.frames)                await db.frames.bulkAdd(d.frames as never)
+        if (d.lenses)                await db.lenses.bulkAdd(d.lenses as never)
+        if (d.inventoryMovements)    await db.inventoryMovements.bulkAdd(d.inventoryMovements as never)
+        if (d.stocktakingSessions)   await db.stocktakingSessions.bulkAdd(d.stocktakingSessions as never)
+        if (d.stocktakingItems)      await db.stocktakingItems.bulkAdd(d.stocktakingItems as never)
+        if (d.sales)                 await db.sales.bulkAdd(d.sales as never)
+        if (d.saleItems)             await db.saleItems.bulkAdd(d.saleItems as never)
+        if (d.payments)              await db.payments.bulkAdd(d.payments as never)
+        if (d.saleReturns)           await db.saleReturns.bulkAdd(d.saleReturns as never)
+        if (d.saleReturnItems)       await db.saleReturnItems.bulkAdd(d.saleReturnItems as never)
+        if (d.expenses)              await db.expenses.bulkAdd(d.expenses as never)
+        if (d.suppliers)             await db.suppliers.bulkAdd(d.suppliers as never)
+        if (d.purchases)             await db.purchases.bulkAdd(d.purchases as never)
+        if (d.purchaseItems)         await db.purchaseItems.bulkAdd(d.purchaseItems as never)
+        if (d.cashTransactions)      await db.cashTransactions.bulkAdd(d.cashTransactions as never)
+        if (d.settings)              await db.settings.bulkAdd(d.settings as never)
+        if (d.auditLogs)             await db.auditLogs.bulkAdd(d.auditLogs as never)
       }
     )
 
