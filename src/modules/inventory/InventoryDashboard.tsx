@@ -16,8 +16,8 @@ export function InventoryDashboard() {
       db.lenses.filter(l => !l.deletedAt).toArray(),
     ]).then(([frames, lenses]) => {
       const map: Record<string, string> = {}
-      frames.forEach(fr => { if (fr.id) map[fr.id] = fr.name })
-      lenses.forEach(l => { if (l.id) map[l.id] = l.name })
+      frames.forEach(fr => { if (fr.id && fr.name) map[fr.id] = fr.name })
+      lenses.forEach(l => { if (l.id && l.name) map[l.id] = l.name })
       setProductNames(map)
     })
   }, [])
