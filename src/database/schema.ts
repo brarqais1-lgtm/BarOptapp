@@ -113,16 +113,17 @@ export interface Frame extends BaseRecord {
 // ── Lenses ────────────────────────────────────────────────────────────────────
 export type LensType = 'single_vision' | 'bifocal' | 'progressive'
 export interface Lens extends BaseRecord {
-  sku: string
-  name?: string            // product display name (added Phase 05)
-  brand: string
+  name: string             // product display name e.g. "Essilor Varilux"
+  lensType: LensType
+  // legacy / optional fields
+  sku?: string
+  brand?: string
   model?: string
   barcode?: string
-  lensType: LensType
   material?: string
-  coating?: string         // legacy single-value field
-  coatings?: string[]      // multi-value: 'ar' | 'blue_cut' | 'uv' | 'photochromic'
-  index?: number           // refractive index e.g. 1.5, 1.6, 1.67, 1.74
+  coating?: string
+  coatings?: string[]
+  index?: number
   sphereMin?: number; sphereMax?: number
   cylinderMin?: number; cylinderMax?: number
   addMin?: number; addMax?: number
@@ -130,11 +131,19 @@ export interface Lens extends BaseRecord {
   categoryId?: string
   imageUrl?: string
   notes?: string
-  // inventory fields (Phase 06+)
   costPrice?: number
   sellingPrice?: number
   quantity?: number
   reorderPoint?: number
+}
+
+// ── Lens Variants (per-degree stock) ─────────────────────────────────────────
+export interface LensVariant extends BaseRecord {
+  lensId: string
+  sph: number    // sphere power e.g. +1.00, -2.50
+  cyl: number    // cylinder power e.g. 0.00, -0.75
+  quantity: number
+  price: number
 }
 
 // ── Inventory Movements ───────────────────────────────────────────────────────

@@ -161,14 +161,14 @@ export async function getStockList(
     for (const l of lenses) {
       const qty = l.quantity ?? 0
       const rp = l.reorderPoint ?? 0
-      results.push({ id: l.id, productType: 'lens', sku: l.sku, name: l.name ?? l.brand, brand: l.brand, quantity: qty, reorderPoint: rp, costPrice: l.costPrice, sellingPrice: l.sellingPrice, status: stockStatus(qty, rp) })
+      results.push({ id: l.id, productType: 'lens', sku: l.sku ?? '', name: l.name, brand: l.brand ?? l.name, quantity: qty, reorderPoint: rp, costPrice: l.costPrice, sellingPrice: l.sellingPrice, status: stockStatus(qty, rp) })
     }
   }
 
   let list = results
   if (filters.query) {
     const q = filters.query.toLowerCase()
-    list = list.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q))
+    list = list.filter(p => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q) || (p.brand ?? '').toLowerCase().includes(q))
   }
   if (filters.status === 'low_stock') list = list.filter(p => p.status === 'low_stock')
   else if (filters.status === 'out_of_stock') list = list.filter(p => p.status === 'out_of_stock')

@@ -172,8 +172,8 @@ export async function getInventoryValuation(db: BarOptDB = globalDb): Promise<In
     ...lenses.map(l => ({
       productType: 'lens' as const,
       productId: l.id,
-      name: l.name ?? [l.brand, l.lensType].filter(Boolean).join(' '),
-      sku: l.sku,
+      name: l.name,
+      sku: l.sku ?? '',
       quantity: l.quantity ?? 0,
       costPrice: l.costPrice ?? 0,
       sellingPrice: l.sellingPrice ?? 0,

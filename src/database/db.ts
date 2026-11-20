@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie'
 import type {
   Patient, EyeExamination, Prescription,
   PatientMedicalHistory, PatientOcularHistory, PatientSymptom,
-  ProductCategory, Frame, Lens, InventoryMovement,
+  ProductCategory, Frame, Lens, LensVariant, InventoryMovement,
   StocktakingSession, StocktakingItem,
   Sale, SaleItem, Payment, SaleReturn, SaleReturnItem,
   Expense, Supplier, Purchase, PurchaseItem,
@@ -19,6 +19,7 @@ export class BarOptDB extends Dexie {
   productCategories!: Table<ProductCategory>
   frames!: Table<Frame>
   lenses!: Table<Lens>
+  lensVariants!: Table<LensVariant>
   inventoryMovements!: Table<InventoryMovement>
   stocktakingSessions!: Table<StocktakingSession>
   stocktakingItems!: Table<StocktakingItem>
@@ -221,6 +222,11 @@ export class BarOptDB extends Dexie {
     this.version(10).stores({
       expenses:
         'id, &expenseNumber, category, paidAt, paymentMethod, deletedAt, createdAt',
+    })
+
+    // ── Version 11: Lens Variants — per-degree stock ──────────────────────────
+    this.version(11).stores({
+      lensVariants: 'id, lensId, [lensId+sph+cyl], createdAt',
     })
 
     // ── Version 6: Inventory & Stocktaking ────────────────────────────────────

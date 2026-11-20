@@ -48,7 +48,7 @@ export async function createBackup(db: BarOptDB = globalDb): Promise<BackupFile>
   const tableNames = [
     'patients', 'eyeExaminations', 'prescriptions',
     'patientMedicalHistory', 'patientOcularHistory', 'patientSymptoms',
-    'productCategories', 'frames', 'lenses', 'inventoryMovements',
+    'productCategories', 'frames', 'lenses', 'lensVariants', 'inventoryMovements',
     'stocktakingSessions', 'stocktakingItems',
     'sales', 'saleItems', 'payments', 'saleReturns', 'saleReturnItems',
     'expenses', 'suppliers', 'purchases', 'purchaseItems',
@@ -148,7 +148,7 @@ export async function restoreBackup(
       [
         db.patients, db.eyeExaminations, db.prescriptions,
         db.patientMedicalHistory, db.patientOcularHistory, db.patientSymptoms,
-        db.productCategories, db.frames, db.lenses, db.inventoryMovements,
+        db.productCategories, db.frames, db.lenses, db.lensVariants, db.inventoryMovements,
         db.stocktakingSessions, db.stocktakingItems,
         db.sales, db.saleItems, db.payments, db.saleReturns, db.saleReturnItems,
         db.expenses, db.suppliers, db.purchases, db.purchaseItems,
@@ -164,6 +164,7 @@ export async function restoreBackup(
         await db.productCategories.clear()
         await db.frames.clear()
         await db.lenses.clear()
+        await db.lensVariants.clear()
         await db.inventoryMovements.clear()
         await db.stocktakingSessions.clear()
         await db.stocktakingItems.clear()
@@ -190,6 +191,7 @@ export async function restoreBackup(
         if (d.productCategories)     await db.productCategories.bulkAdd(d.productCategories as never)
         if (d.frames)                await db.frames.bulkAdd(d.frames as never)
         if (d.lenses)                await db.lenses.bulkAdd(d.lenses as never)
+        if (d.lensVariants)          await db.lensVariants.bulkAdd(d.lensVariants as never)
         if (d.inventoryMovements)    await db.inventoryMovements.bulkAdd(d.inventoryMovements as never)
         if (d.stocktakingSessions)   await db.stocktakingSessions.bulkAdd(d.stocktakingSessions as never)
         if (d.stocktakingItems)      await db.stocktakingItems.bulkAdd(d.stocktakingItems as never)

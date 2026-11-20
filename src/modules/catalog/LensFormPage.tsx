@@ -1,92 +1,120 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
 import { FormField } from '../../components/ui/FormField'
 import { PageSpinner } from '../../components/ui/Spinner'
 import { useToast } from '../../contexts/ToastContext'
 import { LensFormSchema, type LensFormValues } from './schema'
-import { createLens, updateLens, getLensById } from './LensRepository'
-import { getCategories } from './ProductCategoryRepository'
+import { createLens, updateLens, getLensWithVariants } from './LensRepository'
 import { db } from '../../database/db'
-import type { ProductCategory } from '../../database/schema'
 
-const COATING_OPTIONS = ['ar', 'blue_cut', 'uv', 'photochromic'] as const
-type Coating = typeof COATING_OPTIONS[number]
-
-const EMPTY: LensFormValues = {
-  sku: '', name: '', brand: '', model: '', barcode: '',
-  lensType: 'single_vision', material: '', coatings: [],
-  index: undefined, sphereMin: undefined, sphereMax: undefined,
-  cylinderMin: undefined, cylinderMax: undefined,
-  addMin: undefined, addMax: undefined,
-  supplierId: '', categoryId: '', imageUrl: '', notes: '',
+type VariantDraft = {
+  id?: string
+  sph: string
+  cyl: string
+  quantity: string
+  price: string
 }
+
+const EMPTY_VARIANT: VariantDraft = { sph: '0.00', cyl: '0.00', quantity: '0', price: '0' }
+
+const EMPTY: { name: string; lensType: string; notes: string; variants: VariantDraft[] } = {
+  name: '',
+  lensType: 'single_vision',
+  notes: '',
+  variants: [{ ...EMPTY_VARIANT }],
+}
+
+const LENS_TYPES = [
+  { value: 'single_vision', label: 'Single Vision' },
+  { value: 'bifocal',       label: 'Bifocal' },
+  { value: 'progressive',   label: 'Progressive' },
+]
 
 export function LensFormPage() {
   const { id } = useParams<{ id?: string }>()
   const isEdit = !!id
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const { toast } = useToast()
 
-  const [values, setValues] = useState<LensFormValues>(EMPTY)
-  const [errors, setErrors] = useState<Partial<Record<keyof LensFormValues, string>>>({})
-  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [name, setName] = useState('')
+  const [lensType, setLensType] = useState('single_vision')
+  const [notes, setNotes] = useState('')
+  const [variants, setVariants] = useState<VariantDraft[]>([{ ...EMPTY_VARIANT }])
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [serverError, setServerError] = useState('')
 
   useEffect(() => {
-    getCategories('lens', db).then(setCategories)
-    if (isEdit && id) {
-      getLensById(id, db).then(lens => {
-        if (!lens) { navigate('/lenses'); return }
-        setValues({
-          sku: lens.sku, name: lens.name ?? '', brand: lens.brand, model: lens.model ?? '',
-          barcode: lens.barcode ?? '', lensType: lens.lensType, material: lens.material ?? '',
-          coatings: (lens.coatings ?? []) as Coating[],
-          index: lens.index, sphereMin: lens.sphereMin, sphereMax: lens.sphereMax,
-          cylinderMin: lens.cylinderMin, cylinderMax: lens.cylinderMax,
-          addMin: lens.addMin, addMax: lens.addMax,
-          supplierId: lens.supplierId ?? '', categoryId: lens.categoryId ?? '',
-          imageUrl: lens.imageUrl ?? '', notes: lens.notes ?? '',
-        })
-        setLoading(false)
-      })
-    }
+    if (!isEdit || !id) return
+    getLensWithVariants(id, db).then(data => {
+      if (!data) { navigate('/lenses'); return }
+      const { lens, variants: vs } = data
+      setName(lens.name)
+      setLensType(lens.lensType)
+      setNotes(lens.notes ?? '')
+      setVariants(
+        vs.length
+          ? vs.map(v => ({
+              id: v.id,
+              sph: v.sph.toFixed(2),
+              cyl: v.cyl.toFixed(2),
+              quantity: String(v.quantity),
+              price: String(v.price),
+            }))
+          : [{ ...EMPTY_VARIANT }],
+      )
+      setLoading(false)
+    })
   }, [id, isEdit, navigate])
 
-  const set = (field: keyof LensFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setValues(v => ({ ...v, [field]: e.target.value }))
-    setErrors(errs => ({ ...errs, [field]: undefined }))
+  const setVariantField = (i: number, field: keyof VariantDraft, value: string) => {
+    setVariants(prev => prev.map((v, idx) => idx === i ? { ...v, [field]: value } : v))
+    setErrors(e => { const n = { ...e }; delete n[`v${i}_${field}`]; return n })
   }
 
-  const toggleCoating = (c: Coating) => {
-    setValues(v => ({
-      ...v,
-      coatings: v.coatings.includes(c) ? v.coatings.filter(x => x !== c) : [...v.coatings, c],
-    }))
-  }
+  const addVariant = () => setVariants(prev => [...prev, { ...EMPTY_VARIANT }])
+
+  const removeVariant = (i: number) =>
+    setVariants(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const parsed = LensFormSchema.safeParse(values)
+
+    const formData: LensFormValues = {
+      name,
+      lensType: lensType as LensFormValues['lensType'],
+      notes,
+      variants: variants.map(v => ({
+        id: v.id,
+        sph: Number(v.sph),
+        cyl: Number(v.cyl),
+        quantity: Math.round(Number(v.quantity)),
+        price: Number(v.price),
+      })),
+    }
+
+    const parsed = LensFormSchema.safeParse(formData)
     if (!parsed.success) {
-      const errs: typeof errors = {}
-      parsed.error.issues.forEach(i => { if (i.path.length) errs[String(i.path[0]) as keyof LensFormValues] = i.message })
+      const errs: Record<string, string> = {}
+      parsed.error.issues.forEach(issue => {
+        const key = issue.path.join('_')
+        errs[key] = issue.message
+      })
       setErrors(errs)
       return
     }
+
     setSaving(true)
     setServerError('')
     try {
       if (isEdit && id) {
         await updateLens(id, parsed.data, db)
-        toast(t('catalog.updateSuccess'), 'success')
+        toast('تم تحديث العدسة بنجاح', 'success')
       } else {
         await createLens(parsed.data, db)
-        toast(t('catalog.createSuccess'), 'success')
+        toast('تم إضافة العدسة بنجاح', 'success')
       }
       navigate('/lenses')
     } catch (err) {
@@ -102,120 +130,179 @@ export function LensFormPage() {
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="mb-5">
         <button onClick={() => navigate('/lenses')} className="text-sm text-blue-600 hover:underline mb-2 block">
-          ← {t('catalog.lenses.title')}
+          ← العدسات
         </button>
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-          {isEdit ? t('catalog.lenses.edit') : t('catalog.lenses.new')}
+          {isEdit ? 'تعديل العدسة' : 'إضافة عدسة جديدة'}
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {serverError && (
           <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3">{serverError}</div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label={t('catalog.sku')} required error={errors.sku}>
-            <input value={values.sku} onChange={set('sku')} className="form-input" placeholder="LNS-001" />
+        {/* Lens info */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+          <FormField label="اسم العدسة" required error={errors.name}>
+            <input
+              value={name}
+              onChange={e => { setName(e.target.value); setErrors(er => ({ ...er, name: '' })) }}
+              className="form-input"
+              placeholder="مثال: Essilor Varilux, Zeiss Progressive..."
+              dir="ltr"
+            />
           </FormField>
-          <FormField label={t('catalog.name')} required error={errors.name}>
-            <input value={values.name} onChange={set('name')} className="form-input" />
+
+          <FormField label="نوع العدسة" required error={errors.lensType}>
+            <div className="flex gap-2 flex-wrap">
+              {LENS_TYPES.map(t => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setLensType(t.value)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    lensType === t.value
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-blue-400'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </FormField>
+
+          <FormField label="ملاحظات" error={errors.notes}>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={2}
+              className="form-input resize-none"
+            />
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label={t('catalog.brand')} required error={errors.brand}>
-            <input value={values.brand} onChange={set('brand')} className="form-input" />
-          </FormField>
-          <FormField label={t('catalog.model')} error={errors.model}>
-            <input value={values.model} onChange={set('model')} className="form-input" />
-          </FormField>
-        </div>
+        {/* Degree variants */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">الدرجات والمخزون</h2>
+              <p className="text-xs text-slate-400 mt-0.5">كل صف: درجة كروية (SPH) + أسطوانية (CYL) + كمية + سعر</p>
+            </div>
+            <button
+              type="button"
+              onClick={addVariant}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            >
+              <span className="text-base leading-none">+</span>
+              إضافة درجة
+            </button>
+          </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label={t('catalog.lenses.lensType')} required error={errors.lensType}>
-            <select value={values.lensType} onChange={set('lensType')} className="form-input">
-              <option value="single_vision">{t('catalog.lenses.single_vision')}</option>
-              <option value="bifocal">{t('catalog.lenses.bifocal')}</option>
-              <option value="progressive">{t('catalog.lenses.progressive')}</option>
-            </select>
-          </FormField>
-          <FormField label={t('catalog.lenses.material')} error={errors.material}>
-            <input value={values.material} onChange={set('material')} className="form-input" placeholder="CR-39, Polycarbonate…" />
-          </FormField>
-        </div>
+          {errors.variants && (
+            <div className="text-red-500 text-xs mb-3">{errors.variants}</div>
+          )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label={t('catalog.barcode')} error={errors.barcode}>
-            <input value={values.barcode} onChange={set('barcode')} className="form-input" />
-          </FormField>
-          <FormField label={t('catalog.lenses.index')} error={errors.index}>
-            <input value={values.index ?? ''} onChange={set('index')} type="number" step="0.01" min="1" max="2" className="form-input" placeholder="1.56" />
-          </FormField>
-        </div>
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_1fr_80px_90px_32px] gap-2 mb-2 px-1">
+            <span className="text-xs font-semibold text-slate-500 uppercase">SPH</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase">CYL</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase">كمية</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase">سعر (IQD)</span>
+            <span />
+          </div>
 
-        {/* Coatings */}
-        <div>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('catalog.lenses.coatings')}</p>
-          <div className="flex flex-wrap gap-2">
-            {COATING_OPTIONS.map(c => (
-              <label key={c} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm cursor-pointer border transition-colors ${values.coatings.includes(c) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400'}`}>
-                <input type="checkbox" className="sr-only" checked={values.coatings.includes(c)} onChange={() => toggleCoating(c)} />
-                {t(`catalog.lenses.coating_${c}`)}
-              </label>
+          <div className="space-y-2">
+            {variants.map((v, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1fr_80px_90px_32px] gap-2 items-start">
+                <div>
+                  <input
+                    type="number"
+                    value={v.sph}
+                    onChange={e => setVariantField(i, 'sph', e.target.value)}
+                    step="0.25"
+                    min="-30"
+                    max="30"
+                    className={`form-input text-center font-mono text-sm ${errors[`v${i}_sph`] ? 'border-red-400' : ''}`}
+                    placeholder="0.00"
+                    dir="ltr"
+                  />
+                  {errors[`v${i}_sph`] && <p className="text-red-500 text-xs mt-0.5">{errors[`v${i}_sph`]}</p>}
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    value={v.cyl}
+                    onChange={e => setVariantField(i, 'cyl', e.target.value)}
+                    step="0.25"
+                    min="-10"
+                    max="10"
+                    className={`form-input text-center font-mono text-sm ${errors[`v${i}_cyl`] ? 'border-red-400' : ''}`}
+                    placeholder="0.00"
+                    dir="ltr"
+                  />
+                  {errors[`v${i}_cyl`] && <p className="text-red-500 text-xs mt-0.5">{errors[`v${i}_cyl`]}</p>}
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    value={v.quantity}
+                    onChange={e => setVariantField(i, 'quantity', e.target.value)}
+                    step="1"
+                    min="0"
+                    className={`form-input text-center text-sm ${errors[`v${i}_quantity`] ? 'border-red-400' : ''}`}
+                    placeholder="0"
+                  />
+                  {errors[`v${i}_quantity`] && <p className="text-red-500 text-xs mt-0.5">{errors[`v${i}_quantity`]}</p>}
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    value={v.price}
+                    onChange={e => setVariantField(i, 'price', e.target.value)}
+                    step="500"
+                    min="0"
+                    className={`form-input text-center text-sm ${errors[`v${i}_price`] ? 'border-red-400' : ''}`}
+                    placeholder="0"
+                  />
+                  {errors[`v${i}_price`] && <p className="text-red-500 text-xs mt-0.5">{errors[`v${i}_price`]}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeVariant(i)}
+                  disabled={variants.length === 1}
+                  className="mt-1 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="حذف"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
+
+          {/* Summary */}
+          {variants.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex gap-6 text-xs text-slate-500">
+              <span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {variants.reduce((s, v) => s + (Number(v.quantity) || 0), 0)}
+                </span>{' '}
+                قطعة إجمالي
+              </span>
+              <span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {variants.length}
+                </span>{' '}
+                درجة
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Power ranges */}
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">{t('catalog.lenses.powerRanges')}</p>
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label={t('catalog.lenses.sphereMin')} error={errors.sphereMin}>
-              <input value={values.sphereMin ?? ''} onChange={set('sphereMin')} type="number" step="0.25" className="form-input" placeholder="-20" />
-            </FormField>
-            <FormField label={t('catalog.lenses.sphereMax')} error={errors.sphereMax}>
-              <input value={values.sphereMax ?? ''} onChange={set('sphereMax')} type="number" step="0.25" className="form-input" placeholder="+20" />
-            </FormField>
-            <FormField label={t('catalog.lenses.cylinderMin')} error={errors.cylinderMin}>
-              <input value={values.cylinderMin ?? ''} onChange={set('cylinderMin')} type="number" step="0.25" className="form-input" placeholder="-6" />
-            </FormField>
-            <FormField label={t('catalog.lenses.cylinderMax')} error={errors.cylinderMax}>
-              <input value={values.cylinderMax ?? ''} onChange={set('cylinderMax')} type="number" step="0.25" className="form-input" placeholder="+6" />
-            </FormField>
-            {(values.lensType === 'bifocal' || values.lensType === 'progressive') && (
-              <>
-                <FormField label={t('catalog.lenses.addMin')} error={errors.addMin}>
-                  <input value={values.addMin ?? ''} onChange={set('addMin')} type="number" step="0.25" className="form-input" placeholder="0.75" />
-                </FormField>
-                <FormField label={t('catalog.lenses.addMax')} error={errors.addMax}>
-                  <input value={values.addMax ?? ''} onChange={set('addMax')} type="number" step="0.25" className="form-input" placeholder="3.50" />
-                </FormField>
-              </>
-            )}
-          </div>
-        </div>
-
-        {categories.length > 0 && (
-          <FormField label={t('catalog.category')} error={errors.categoryId}>
-            <select value={values.categoryId} onChange={set('categoryId')} className="form-input">
-              <option value="">{t('common.none')}</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.nameAr} / {c.nameEn}</option>)}
-            </select>
-          </FormField>
-        )}
-
-        <FormField label={t('catalog.imageUrl')} error={errors.imageUrl}>
-          <input value={values.imageUrl} onChange={set('imageUrl')} className="form-input" type="url" placeholder="https://…" />
-        </FormField>
-
-        <FormField label={t('catalog.notes')} error={errors.notes}>
-          <textarea value={values.notes} onChange={set('notes')} rows={2} className="form-input resize-none" />
-        </FormField>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={() => navigate('/lenses')}>{t('common.cancel')}</Button>
-          <Button type="submit" loading={saving}>{isEdit ? t('common.save') : t('catalog.lenses.create')}</Button>
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={() => navigate('/lenses')}>إلغاء</Button>
+          <Button type="submit" loading={saving}>{isEdit ? 'حفظ التعديلات' : 'إضافة العدسة'}</Button>
         </div>
       </form>
     </div>

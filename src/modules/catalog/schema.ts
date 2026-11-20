@@ -38,26 +38,33 @@ export const FrameFormSchema = z.object({
 export type FrameFormValues = z.infer<typeof FrameFormSchema>
 
 // ── Lens ──────────────────────────────────────────────────────────────────────
+const optNumVariant = (min: number, max: number) =>
+  z.preprocess(
+    v => (v === '' || v == null ? undefined : (Number.isNaN(Number(v)) ? undefined : Number(v))),
+    z.number({ required_error: 'مطلوب' }).min(min).max(max),
+  )
+
+export const LensVariantRowSchema = z.object({
+  id:       z.string().optional(),
+  sph:      optNumVariant(-30, 30),
+  cyl:      optNumVariant(-10, 10),
+  quantity: z.preprocess(
+    v => (v === '' || v == null ? undefined : Math.round(Number(v))),
+    z.number({ required_error: 'مطلوب' }).int().min(0),
+  ),
+  price: z.preprocess(
+    v => (v === '' || v == null ? undefined : Number(v)),
+    z.number({ required_error: 'مطلوب' }).min(0),
+  ),
+})
+
+export type LensVariantRow = z.infer<typeof LensVariantRowSchema>
+
 export const LensFormSchema = z.object({
-  sku:         z.string().min(1, 'SKU مطلوب / SKU required').max(60),
-  name:        z.string().min(1, 'اسم المنتج مطلوب / Name required').max(120),
-  brand:       z.string().min(1, 'العلامة التجارية مطلوبة / Brand required').max(80),
-  model:       optStr(),
-  barcode:     optStr(),
-  lensType:    z.enum(['single_vision', 'bifocal', 'progressive']),
-  material:    optStr(),
-  coatings:    z.array(z.enum(['ar', 'blue_cut', 'uv', 'photochromic'])).default([]),
-  index:       optNum(1.0, 2.0),
-  sphereMin:   optNum(-30, 0),
-  sphereMax:   optNum(0, 30),
-  cylinderMin: optNum(-10, 0),
-  cylinderMax: optNum(0, 10),
-  addMin:      optNum(0, 4),
-  addMax:      optNum(0, 4),
-  supplierId:  optStr(),
-  categoryId:  optStr(),
-  imageUrl:    optStr(),
-  notes:       optStr(),
+  name:     z.string().min(1, 'اسم العدسة مطلوب').max(120),
+  lensType: z.enum(['single_vision', 'bifocal', 'progressive']),
+  notes:    optStr(),
+  variants: z.array(LensVariantRowSchema).min(1, 'أضف درجة واحدة على الأقل'),
 })
 
 export type LensFormValues = z.infer<typeof LensFormSchema>

@@ -20,4 +20,4 @@ export const MIGRATIONS: Record<number, string> = {
   10: 'Expenses: add expenseNumber (unique) and paymentMethod fields; add unique expenseNumber index',
 }
 
-export const CURRENT_DB_VERSION = 10
+export const CURRENT_DB_VERSION = 11
