@@ -11,28 +11,14 @@ export function ActivationGate({ children }: { children: ReactNode }) {
     setActivated(isActivated())
   }, [])
 
-  function formatInput(value: string) {
-    // Auto-format as BAROPT-XXXX-XXXX-XXXX
-    const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
-    if (clean.startsWith('BAROPT')) {
-      const rest = clean.slice(6).replace(/[^A-Z0-9]/g, '')
-      let formatted = 'BAROPT'
-      if (rest.length > 0) formatted += '-' + rest.slice(0, 4)
-      if (rest.length > 4) formatted += '-' + rest.slice(4, 8)
-      if (rest.length > 8) formatted += '-' + rest.slice(8, 12)
-      return formatted
-    }
-    return value.toUpperCase()
-  }
-
   async function handleActivate() {
     if (!code.trim()) return
     setLoading(true)
     setError('')
     try {
-      const valid = await validateLicenseCode(code)
-      if (valid) {
-        saveActivation(code.trim().toUpperCase())
+      const storeId = await validateLicenseCode(code)
+      if (storeId !== null) {
+        saveActivation(code.trim().replace(/\D/g, ''), storeId)
         setActivated(true)
       } else {
         setError('كود التفعيل غير صحيح. تحقق من الكود وأعد المحاولة.')
@@ -84,15 +70,15 @@ export function ActivationGate({ children }: { children: ReactNode }) {
               value={code}
               onChange={e => {
                 setError('')
-                setCode(formatInput(e.target.value))
+                setCode(e.target.value.replace(/\D/g, '').slice(0, 8))
               }}
               onKeyDown={e => e.key === 'Enter' && handleActivate()}
-              placeholder="BAROPT-XXXX-XXXX-XXXX"
-              maxLength={21}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+              placeholder="12345678"
+              maxLength={8}
+              inputMode="numeric"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xl tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
               dir="ltr"
               autoComplete="off"
-              autoCapitalize="characters"
             />
           </div>
 
@@ -104,7 +90,7 @@ export function ActivationGate({ children }: { children: ReactNode }) {
 
           <button
             onClick={handleActivate}
-            disabled={loading || code.length < 10}
+            disabled={loading || code.length < 8}
             className="w-full py-3 rounded-xl bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 active:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'جارٍ التحقق...' : 'تفعيل النظام'}
