@@ -33,6 +33,9 @@ export function ActivationGate({ children }: { children: ReactNode }) {
   // Still checking
   if (activated === null) return null
 
+  // Allow seller generator without activation
+  if (window.location.hash.startsWith('#/admin/gen')) return <>{children}</>
+
   // Already activated
   if (activated) return <>{children}</>
 
