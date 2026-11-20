@@ -30,6 +30,7 @@ import ExpensesPage from '../modules/expenses/ExpensesPage'
 import ExpenseFormPage from '../modules/expenses/ExpenseFormPage'
 import ReportsPage from '../modules/reports/ReportsPage'
 import GlassesSalePage from '../modules/sales/GlassesSalePage'
+import GeneratorPage from '../modules/admin/GeneratorPage'
 
 function ComingSoon({ label }: { label: string }) {
   return (
@@ -85,6 +86,7 @@ export function AppRouter() {
           <Route path="expenses/:id/edit" element={<ExpenseFormPage />} />
           <Route path="reports"      element={<ReportsPage />} />
           <Route path="settings"     element={<SettingsPage />} />
+          <Route path="admin/gen"    element={<GeneratorPage />} />
           <Route path="*"            element={<Navigate to="/patients" replace />} />
         </Route>
       </Routes>
