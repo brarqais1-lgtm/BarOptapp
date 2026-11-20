@@ -89,10 +89,10 @@ let history = []
 async function hmacCode(secret, storeId) {
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign'])
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(String(storeId).padStart(4,'0')))
-  const b = new Uint8Array(sig)
-  const n = ((b[0]<<24)|(b[1]<<16)|(b[2]<<8)|b[3]) >>> 0
-  return String(n % 100_000_000).padStart(8,'0')
+  const id = String(storeId).padStart(4,'0')
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(id))
+  const hex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase()
+  return `BAROPT-${id}-${hex.slice(0,4)}-${hex.slice(4,8)}`
 }
 
 async function unlockGen() {
