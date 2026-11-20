@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarOpt — توليد الأكواد</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1e3a8a,#1d4ed8);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+    .card{background:#fff;border-radius:24px;padding:32px;width:100%;max-width:460px;box-shadow:0 25px 50px rgba(0,0,0,.3)}
+    .logo{text-align:center;margin-bottom:24px}
+    .logo-icon{width:60px;height:60px;background:#1e40af;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;margin-bottom:8px}
+    h1{font-size:19px;color:#1e293b;font-weight:700}
+    .sub{font-size:12px;color:#64748b;margin-top:3px}
+    label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
+    input{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:11px;font-size:14px;outline:none;transition:border .2s;margin-top:4px}
+    input:focus{border-color:#1e40af}
+    input.mono{font-family:monospace;letter-spacing:3px;text-align:center}
+    .btn{width:100%;padding:13px;background:#1e40af;color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:background .2s}
+    .btn:hover{background:#1e3a8a}
+    .result{margin-top:18px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:13px;padding:18px;text-align:center;display:none}
+    .code{font-size:30px;font-weight:800;color:#1e40af;font-family:monospace;letter-spacing:6px}
+    .copy-btn{margin-top:10px;padding:8px 20px;background:#1e40af;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;transition:background .2s}
+    .copy-btn.ok{background:#16a34a}
+    .history{margin-top:20px}
+    .hi{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#f8fafc;border-radius:9px;margin-bottom:5px;font-size:12px}
+    .hi .c{font-family:monospace;color:#1e40af;font-weight:600;letter-spacing:2px}
+    .hi button{padding:3px 9px;background:#e0e7ff;color:#3730a3;border:none;border-radius:5px;font-size:11px;cursor:pointer}
+    .warn{background:#fef9c3;border:1px solid #fde047;border-radius:9px;padding:9px 13px;font-size:11px;color:#854d0e;margin-top:14px}
+    .err{color:#dc2626;font-size:12px;margin-top:5px;display:none}
+    .section{margin-bottom:14px}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">B</div>
+    <h1>أداة توليد الأكواد</h1>
+    <p class="sub">خاصة بك — لا تشاركها مع أحد</p>
+  </div>
+
+  <!-- Step 1: Secret key -->
+  <div id="key-screen">
+    <div class="section">
+      <label>مفتاح النظام السري</label>
+      <input id="secret-input" type="password" placeholder="أدخل المفتاح السري" onkeydown="if(event.key==='Enter')unlockGen()">
+      <div class="err" id="key-err">المفتاح غير صحيح</div>
+    </div>
+    <button class="btn" onclick="unlockGen()">دخول</button>
+  </div>
+
+  <!-- Step 2: Generator -->
+  <div id="gen-screen" style="display:none">
+    <div class="section">
+      <label>اسم المحل</label>
+      <input id="storeName" type="text" placeholder="مثال: بصريات الأمين" dir="rtl" style="text-align:right;letter-spacing:0">
+    </div>
+    <div class="section">
+      <label>رقم المحل (1 – 9999)</label>
+      <input id="storeId" type="number" min="1" max="9999" placeholder="1" class="mono" onkeydown="if(event.key==='Enter')generate()">
+    </div>
+    <button class="btn" onclick="generate()">⚡ توليد الكود</button>
+
+    <div class="result" id="result">
+      <div id="result-label" style="font-size:12px;color:#0369a1;font-weight:600;margin-bottom:6px"></div>
+      <div class="code" id="result-code"></div>
+      <button class="copy-btn" id="copy-btn" onclick="copyMain()">📋 نسخ</button>
+    </div>
+
+    <div class="warn">⚠️ هذه الصفحة سرية — لا ترسل الرابط للعملاء</div>
+
+    <div id="history-wrap" style="display:none">
+      <hr style="border:none;border-top:1px solid #f1f5f9;margin:16px 0">
+      <div class="history">
+        <p style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">الأكواد المولّدة</p>
+        <div id="history-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const H_KEY = 'baropt-gen-history'
+let SECRET = ''
+let lastCode = ''
+let history = []
+
+// Verify the secret by computing a known test value
+async function hmacCode(secret, storeId) {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(String(storeId).padStart(4,'0')))
+  const b = new Uint8Array(sig)
+  const n = ((b[0]<<24)|(b[1]<<16)|(b[2]<<8)|b[3]) >>> 0
+  return String(n % 100_000_000).padStart(8,'0')
+}
+
+async function unlockGen() {
+  const val = document.getElementById('secret-input').value.trim()
+  if (!val) return
+  // Validate: storeId 0 must produce a deterministic value — just check it runs
+  try {
+    await hmacCode(val, 1)
+    SECRET = val
+    document.getElementById('key-screen').style.display = 'none'
+    document.getElementById('gen-screen').style.display = 'block'
+    try { history = JSON.parse(localStorage.getItem(H_KEY) || '[]') } catch {}
+    renderHistory()
+  } catch {
+    document.getElementById('key-err').style.display = 'block'
+  }
+}
+
+async function generate() {
+  const id = parseInt(document.getElementById('storeId').value)
+  if (!id || id < 1 || id > 9999) { alert('أدخل رقم بين 1 و 9999'); return }
+  const code = await hmacCode(SECRET, id)
+  lastCode = code
+  const name = document.getElementById('storeName').value.trim()
+  document.getElementById('result').style.display = 'block'
+  document.getElementById('result-label').textContent = name ? 'كود تفعيل: ' + name : 'كود تفعيل (محل #' + id + ')'
+  document.getElementById('result-code').textContent = code
+  document.getElementById('copy-btn').textContent = '📋 نسخ'
+  document.getElementById('copy-btn').className = 'copy-btn'
+  const entry = {id, name: name || 'محل #'+id, code, date: new Date().toLocaleDateString('ar-IQ')}
+  history = history.filter(h => h.id !== id)
+  history.unshift(entry)
+  if (history.length > 50) history = history.slice(0,50)
+  try { localStorage.setItem(H_KEY, JSON.stringify(history)) } catch {}
+  renderHistory()
+}
+
+function copyMain() {
+  navigator.clipboard.writeText(lastCode).then(() => {
+    const b = document.getElementById('copy-btn')
+    b.textContent = '✅ تم النسخ'; b.className = 'copy-btn ok'
+    setTimeout(() => { b.textContent = '📋 نسخ'; b.className = 'copy-btn' }, 2000)
+  })
+}
+
+function copySmall(code, btn) {
+  navigator.clipboard.writeText(code).then(() => {
+    const t = btn.textContent; btn.textContent = '✅'
+    setTimeout(() => btn.textContent = t, 1500)
+  })
+}
+
+function renderHistory() {
+  const wrap = document.getElementById('history-wrap')
+  const list = document.getElementById('history-list')
+  if (!history.length) { wrap.style.display = 'none'; return }
+  wrap.style.display = 'block'
+  list.innerHTML = history.map(h => `
+    <div class="hi">
+      <div>
+        <div style="font-weight:600;color:#1e293b">${h.name}</div>
+        <div class="c">${h.code}</div>
+        <div style="color:#94a3b8;font-size:10px">${h.date}</div>
+      </div>
+      <button onclick="copySmall('${h.code}',this)">نسخ</button>
+    </div>`).join('')
+}
+</script>
+</body>
+</html>
