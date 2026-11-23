@@ -1,11 +1,6 @@
 import { z } from 'zod'
 
 const optStr = () => z.string().optional().or(z.literal(''))
-const optNum = (min: number, max: number) =>
-  z.preprocess(
-    v => (v === '' || v == null ? undefined : (Number.isNaN(Number(v)) ? undefined : Number(v))),
-    z.number().min(min).max(max).optional(),
-  )
 
 // ── Frame ─────────────────────────────────────────────────────────────────────
 export const FrameFormSchema = z.object({
@@ -41,7 +36,7 @@ export type FrameFormValues = z.infer<typeof FrameFormSchema>
 const optNumVariant = (min: number, max: number) =>
   z.preprocess(
     v => (v === '' || v == null ? undefined : (Number.isNaN(Number(v)) ? undefined : Number(v))),
-    z.number({ required_error: 'مطلوب' }).min(min).max(max),
+    z.number().min(min).max(max),
   )
 
 export const LensVariantRowSchema = z.object({
@@ -50,11 +45,11 @@ export const LensVariantRowSchema = z.object({
   cyl:      optNumVariant(-10, 10),
   quantity: z.preprocess(
     v => (v === '' || v == null ? undefined : Math.round(Number(v))),
-    z.number({ required_error: 'مطلوب' }).int().min(0),
+    z.number().int().min(0),
   ),
   price: z.preprocess(
     v => (v === '' || v == null ? undefined : Number(v)),
-    z.number({ required_error: 'مطلوب' }).min(0),
+    z.number().min(0),
   ),
 })
 

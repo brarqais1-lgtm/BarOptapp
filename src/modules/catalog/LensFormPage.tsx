@@ -18,12 +18,6 @@ type VariantDraft = {
 
 const EMPTY_VARIANT: VariantDraft = { sph: '0.00', cyl: '0.00', quantity: '0', price: '0' }
 
-const EMPTY: { name: string; lensType: string; notes: string; variants: VariantDraft[] } = {
-  name: '',
-  lensType: 'single_vision',
-  notes: '',
-  variants: [{ ...EMPTY_VARIANT }],
-}
 
 const LENS_TYPES = [
   { value: 'single_vision', label: 'Single Vision' },
