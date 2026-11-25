@@ -145,10 +145,12 @@ export default function SaleDetailPage() {
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-3 print:hidden">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/sales')}>← {t('common.back')}</Button>
-        <h1 className="text-xl font-semibold flex-1">{sale.saleNumber}</h1>
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3 print:hidden">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/sales')}>← {t('common.back')}</Button>
+          <h1 className="text-xl font-semibold flex-1">{sale.saleNumber}</h1>
+        </div>
+        <div className="flex flex-wrap gap-2 justify-end">
           {sale.status === 'draft' && (
             <>
               <Button variant="secondary" size="sm" onClick={() => navigate(`/sales/${id}/edit`)}>
@@ -248,35 +250,37 @@ export default function SaleDetailPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <h2 className="font-medium mb-3">{t('sales.items')}</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 dark:border-gray-700">
-              <th className="py-2 text-start">{t('sales.description')}</th>
-              <th className="py-2 text-end">{t('sales.qty')}</th>
-              <th className="py-2 text-end">{t('sales.unitPrice')}</th>
-              <th className="py-2 text-end">{t('sales.itemDiscount')}</th>
-              <th className="py-2 text-end">{t('sales.lineTotal')}</th>
-              {sale.status !== 'draft' && <th className="py-2 text-end">{t('sales.returned')}</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {items?.map(item => (
-              <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700">
-                <td className="py-2">
-                  <span>{item.description}</span>
-                  {item.sku && <span className="text-xs text-gray-400 ml-2">{item.sku}</span>}
-                </td>
-                <td className="py-2 text-end">{item.quantity}</td>
-                <td className="py-2 text-end">{item.unitPrice.toFixed(2)}</td>
-                <td className="py-2 text-end">{item.discountAmount.toFixed(2)}</td>
-                <td className="py-2 text-end">{item.total.toFixed(2)}</td>
-                {sale.status !== 'draft' && (
-                  <td className="py-2 text-end text-gray-500">{item.returnedQty > 0 ? item.returnedQty : '—'}</td>
-                )}
+        <div className="overflow-x-auto -mx-4 px-4">
+          <table className="w-full text-sm min-w-[480px]">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-700">
+                <th className="py-2 text-start">{t('sales.description')}</th>
+                <th className="py-2 text-end">{t('sales.qty')}</th>
+                <th className="py-2 text-end">{t('sales.unitPrice')}</th>
+                <th className="py-2 text-end">{t('sales.itemDiscount')}</th>
+                <th className="py-2 text-end">{t('sales.lineTotal')}</th>
+                {sale.status !== 'draft' && <th className="py-2 text-end">{t('sales.returned')}</th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items?.map(item => (
+                <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700">
+                  <td className="py-2">
+                    <span>{item.description}</span>
+                    {item.sku && <span className="text-xs text-gray-400 ml-2">{item.sku}</span>}
+                  </td>
+                  <td className="py-2 text-end">{item.quantity}</td>
+                  <td className="py-2 text-end">{item.unitPrice.toFixed(2)}</td>
+                  <td className="py-2 text-end">{item.discountAmount.toFixed(2)}</td>
+                  <td className="py-2 text-end">{item.total.toFixed(2)}</td>
+                  {sale.status !== 'draft' && (
+                    <td className="py-2 text-end text-gray-500">{item.returnedQty > 0 ? item.returnedQty : '—'}</td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <div className="mt-4 flex flex-col items-end gap-1 text-sm">
           <TotalRow label={t('sales.subtotal')} value={sale.subtotal} />
@@ -290,33 +294,35 @@ export default function SaleDetailPage() {
       {payments && payments.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h2 className="font-medium mb-3">{t('sales.payments')}</h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-700">
-                <th className="py-2 text-start">{t('sales.payment.date')}</th>
-                <th className="py-2 text-start">{t('sales.payment.method')}</th>
-                <th className="py-2 text-start">{t('sales.payment.reference')}</th>
-                <th className="py-2 text-end">{t('sales.payment.amount')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map(p => (
-                <tr key={p.id}
-                  className={`border-b border-gray-50 dark:border-gray-700 ${p.deletedAt ? 'opacity-50' : ''}`}>
-                  <td className={`py-2 ${p.deletedAt ? 'line-through text-gray-400' : ''}`}>{p.paidAt}</td>
-                  <td className="py-2">
-                    <Badge variant={p.deletedAt ? 'gray' : (methodBadge[p.method] ?? 'gray')}>
-                      {p.deletedAt ? t('sales.payment.voided') : t(`sales.payment.methods.${p.method}`)}
-                    </Badge>
-                  </td>
-                  <td className={`py-2 ${p.deletedAt ? 'line-through text-gray-400' : ''}`}>{p.reference ?? '—'}</td>
-                  <td className={`py-2 text-end ${p.deletedAt ? 'line-through text-gray-400' : ''}`}>
-                    {p.amount.toFixed(2)}
-                  </td>
+          <div className="overflow-x-auto -mx-4 px-4">
+            <table className="w-full text-sm min-w-[360px]">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-700">
+                  <th className="py-2 text-start">{t('sales.payment.date')}</th>
+                  <th className="py-2 text-start">{t('sales.payment.method')}</th>
+                  <th className="py-2 text-start">{t('sales.payment.reference')}</th>
+                  <th className="py-2 text-end">{t('sales.payment.amount')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payments.map(p => (
+                  <tr key={p.id}
+                    className={`border-b border-gray-50 dark:border-gray-700 ${p.deletedAt ? 'opacity-50' : ''}`}>
+                    <td className={`py-2 whitespace-nowrap ${p.deletedAt ? 'line-through text-gray-400' : ''}`}>{p.paidAt}</td>
+                    <td className="py-2">
+                      <Badge variant={p.deletedAt ? 'gray' : (methodBadge[p.method] ?? 'gray')}>
+                        {p.deletedAt ? t('sales.payment.voided') : t(`sales.payment.methods.${p.method}`)}
+                      </Badge>
+                    </td>
+                    <td className={`py-2 ${p.deletedAt ? 'line-through text-gray-400' : ''}`}>{p.reference ?? '—'}</td>
+                    <td className={`py-2 text-end whitespace-nowrap ${p.deletedAt ? 'line-through text-gray-400' : ''}`}>
+                      {p.amount.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
