@@ -177,7 +177,7 @@ export async function confirmSale(saleId: string, db: BarOptDB = globalDb): Prom
   const items = await db.saleItems.where('saleId').equals(saleId).toArray()
   if (items.length === 0) throw new Error('Cannot confirm a sale with no items')
 
-  await db.transaction('rw', [db.sales, db.saleItems, db.inventoryMovements, db.frames, db.lenses], async () => {
+  await db.transaction('rw', [db.sales, db.saleItems, db.inventoryMovements, db.frames, db.lenses, db.lensVariants], async () => {
     const now = new Date().toISOString()
 
     for (const item of items) {
@@ -188,7 +188,15 @@ export async function confirmSale(saleId: string, db: BarOptDB = globalDb): Prom
         : await db.lenses.get(item.itemId)
       if (!product) throw new Error(`Product not found: ${item.description}`)
 
-      const qtyBefore = product.quantity ?? 0
+      // For lenses, qty lives in lensVariants — aggregate from there
+      let qtyBefore: number
+      if (item.itemType === 'lens') {
+        const variants = await db.lensVariants.where('lensId').equals(item.itemId).toArray()
+        qtyBefore = variants.reduce((s, v) => s + v.quantity, 0)
+      } else {
+        qtyBefore = product.quantity ?? 0
+      }
+
       if (item.quantity > qtyBefore) {
         throw new Error(
           `Insufficient stock for "${item.description}" — available: ${qtyBefore}, requested: ${item.quantity}`
@@ -217,6 +225,15 @@ export async function confirmSale(saleId: string, db: BarOptDB = globalDb): Prom
       if (item.itemType === 'frame') {
         await db.frames.update(item.itemId, { quantity: qtyAfter, updatedAt: now })
       } else {
+        // Deduct from most-stocked variants first, then sync lens total
+        const variants = await db.lensVariants.where('lensId').equals(item.itemId).toArray()
+        let remaining = item.quantity
+        for (const v of variants.sort((a, b) => b.quantity - a.quantity)) {
+          if (remaining <= 0) break
+          const deduct = Math.min(v.quantity, remaining)
+          await db.lensVariants.update(v.id, { quantity: v.quantity - deduct, updatedAt: now })
+          remaining -= deduct
+        }
         await db.lenses.update(item.itemId, { quantity: qtyAfter, updatedAt: now })
       }
     }

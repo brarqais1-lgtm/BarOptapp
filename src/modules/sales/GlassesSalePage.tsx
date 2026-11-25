@@ -106,7 +106,25 @@ export default function GlassesSalePage() {
 
   useEffect(() => {
     db.frames.filter(f => !f.deletedAt && (f.quantity ?? 0) > 0).toArray().then(setFrames)
-    db.lenses.filter(l => !l.deletedAt && (l.quantity ?? 0) > 0).toArray().then(setLenses)
+
+    // Lenses store qty in lensVariants, not on the lens record directly
+    Promise.all([
+      db.lenses.filter(l => !l.deletedAt).toArray(),
+      db.lensVariants.toArray(),
+    ]).then(([allLenses, variants]) => {
+      const qtyByLens: Record<string, number> = {}
+      const priceByLens: Record<string, number> = {}
+      for (const v of variants) {
+        qtyByLens[v.lensId] = (qtyByLens[v.lensId] ?? 0) + v.quantity
+        if (!priceByLens[v.lensId] && v.price > 0) priceByLens[v.lensId] = v.price
+      }
+      setLenses(
+        allLenses
+          .filter(l => (qtyByLens[l.id] ?? 0) > 0)
+          .map(l => ({ ...l, quantity: qtyByLens[l.id] ?? 0, sellingPrice: priceByLens[l.id] ?? l.sellingPrice ?? 0 }))
+      )
+    })
+
     if (prePatientId) {
       db.patients.get(prePatientId).then(p => { if (p) setPatient(p) })
     }
