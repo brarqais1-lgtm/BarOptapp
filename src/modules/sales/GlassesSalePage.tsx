@@ -6,7 +6,14 @@ import { Button } from '../../components/ui/Button'
 import { useToast } from '../../contexts/ToastContext'
 import { useCurrency } from '../../hooks/useCurrency'
 import { createSale, confirmSale } from './SalesRepository'
-import type { Frame, Lens, Patient } from '../../database/schema'
+import type { Frame, Lens, LensVariant, Patient } from '../../database/schema'
+
+type LensWithVariants = Lens & { variants: LensVariant[] }
+
+function fmtDeg(n: number): string {
+  if (n === 0) return 'PL'
+  return (n > 0 ? '+' : '') + n.toFixed(2)
+}
 
 function PatientSearch({ onSelect }: { onSelect: (p: Patient) => void }) {
   const [query, setQuery] = useState('')
@@ -92,11 +99,13 @@ export default function GlassesSalePage() {
 
   const [patient, setPatient] = useState<Patient | null>(null)
   const [frames, setFrames] = useState<Frame[]>([])
-  const [lenses, setLenses] = useState<Lens[]>([])
+  const [lenses, setLenses] = useState<LensWithVariants[]>([])
 
   const [frameId, setFrameId] = useState('')
   const [odLensId, setOdLensId] = useState('')
+  const [odVariantId, setOdVariantId] = useState('')
   const [osLensId, setOsLensId] = useState('')
+  const [osVariantId, setOsVariantId] = useState('')
   const [sameForBothEyes, setSameForBothEyes] = useState(false)
   const [discount, setDiscount] = useState(0)
   const [readyDate, setReadyDate] = useState('')
@@ -107,21 +116,20 @@ export default function GlassesSalePage() {
   useEffect(() => {
     db.frames.filter(f => !f.deletedAt && (f.quantity ?? 0) > 0).toArray().then(setFrames)
 
-    // Lenses store qty in lensVariants, not on the lens record directly
+    // Load lenses with their available variants
     Promise.all([
       db.lenses.filter(l => !l.deletedAt).toArray(),
       db.lensVariants.toArray(),
-    ]).then(([allLenses, variants]) => {
-      const qtyByLens: Record<string, number> = {}
-      const priceByLens: Record<string, number> = {}
-      for (const v of variants) {
-        qtyByLens[v.lensId] = (qtyByLens[v.lensId] ?? 0) + v.quantity
-        if (!priceByLens[v.lensId] && v.price > 0) priceByLens[v.lensId] = v.price
+    ]).then(([allLenses, allVariants]) => {
+      const variantsByLens: Record<string, LensVariant[]> = {}
+      for (const v of allVariants) {
+        if (!variantsByLens[v.lensId]) variantsByLens[v.lensId] = []
+        variantsByLens[v.lensId].push(v)
       }
       setLenses(
         allLenses
-          .filter(l => (qtyByLens[l.id] ?? 0) > 0)
-          .map(l => ({ ...l, quantity: qtyByLens[l.id] ?? 0, sellingPrice: priceByLens[l.id] ?? l.sellingPrice ?? 0 }))
+          .map(l => ({ ...l, variants: (variantsByLens[l.id] ?? []).filter(v => v.quantity > 0) }))
+          .filter(l => l.variants.length > 0)
       )
     })
 
@@ -131,12 +139,14 @@ export default function GlassesSalePage() {
   }, [prePatientId])
 
   const selectedFrame = frames.find(f => f.id === frameId)
-  const selectedOD = lenses.find(l => l.id === odLensId)
-  const selectedOS = sameForBothEyes ? selectedOD : lenses.find(l => l.id === osLensId)
+  const selectedODLens = lenses.find(l => l.id === odLensId)
+  const selectedODVariant = selectedODLens?.variants.find(v => v.id === odVariantId)
+  const selectedOSLens = sameForBothEyes ? selectedODLens : lenses.find(l => l.id === osLensId)
+  const selectedOSVariant = sameForBothEyes ? selectedODVariant : selectedOSLens?.variants.find(v => v.id === osVariantId)
 
   const framePrice = selectedFrame?.sellingPrice ?? 0
-  const odPrice = selectedOD?.sellingPrice ?? 0
-  const osPrice = sameForBothEyes ? odPrice : (selectedOS?.sellingPrice ?? 0)
+  const odPrice = selectedODVariant?.price ?? selectedODLens?.sellingPrice ?? 0
+  const osPrice = sameForBothEyes ? odPrice : (selectedOSVariant?.price ?? selectedOSLens?.sellingPrice ?? 0)
   const subtotal = framePrice + odPrice + osPrice
   const total = Math.max(0, subtotal - discount)
 
@@ -151,36 +161,45 @@ export default function GlassesSalePage() {
         items.push({
           itemType: 'frame' as const,
           itemId: selectedFrame.id,
-          description: `${selectedFrame.brand} ${selectedFrame.model}`,
+          description: `${selectedFrame.brand} ${selectedFrame.model}`.trim(),
           quantity: 1,
           unitPrice: framePrice,
           discountAmount: 0,
         })
       }
-      if (selectedOD) {
+      if (selectedODLens) {
+        const degLabel = selectedODVariant
+          ? ` (SPH ${fmtDeg(selectedODVariant.sph)} / CYL ${fmtDeg(selectedODVariant.cyl)})`
+          : ''
         items.push({
           itemType: 'lens' as const,
-          itemId: selectedOD.id,
-          description: `${selectedOD.name} — عين يمنى`,
+          itemId: selectedODLens.id,
+          description: `${selectedODLens.name}${degLabel} — عين يمنى`,
           quantity: 1,
           unitPrice: odPrice,
           discountAmount: 0,
         })
       }
-      if (sameForBothEyes && selectedOD) {
+      if (sameForBothEyes && selectedODLens) {
+        const degLabel = selectedODVariant
+          ? ` (SPH ${fmtDeg(selectedODVariant.sph)} / CYL ${fmtDeg(selectedODVariant.cyl)})`
+          : ''
         items.push({
           itemType: 'lens' as const,
-          itemId: selectedOD.id,
-          description: `${selectedOD.name} — عين يسرى`,
+          itemId: selectedODLens.id,
+          description: `${selectedODLens.name}${degLabel} — عين يسرى`,
           quantity: 1,
           unitPrice: odPrice,
           discountAmount: 0,
         })
-      } else if (selectedOS) {
+      } else if (selectedOSLens) {
+        const degLabel = selectedOSVariant
+          ? ` (SPH ${fmtDeg(selectedOSVariant.sph)} / CYL ${fmtDeg(selectedOSVariant.cyl)})`
+          : ''
         items.push({
           itemType: 'lens' as const,
-          itemId: selectedOS.id,
-          description: `${selectedOS.name} — عين يسرى`,
+          itemId: selectedOSLens.id,
+          description: `${selectedOSLens.name}${degLabel} — عين يسرى`,
           quantity: 1,
           unitPrice: osPrice,
           discountAmount: 0,
@@ -278,13 +297,25 @@ export default function GlassesSalePage() {
               <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
               <label className="text-sm font-bold text-blue-700 dark:text-blue-400">عين يمنى (OD)</label>
             </div>
-            <select value={odLensId} onChange={e => setOdLensId(e.target.value)} className={selectClass}>
+            <select value={odLensId} onChange={e => { setOdLensId(e.target.value); setOdVariantId('') }} className={selectClass}>
               <option value="">— بدون عدسة —</option>
               {lenses.map(l => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
             </select>
-            {selectedOD && (
+            {selectedODLens && (
+              <select value={odVariantId} onChange={e => setOdVariantId(e.target.value)} className={`${selectClass} mt-2 font-mono text-xs`}>
+                <option value="">— اختر الدرجة —</option>
+                {selectedODLens.variants
+                  .sort((a, b) => a.sph - b.sph || a.cyl - b.cyl)
+                  .map(v => (
+                    <option key={v.id} value={v.id}>
+                      {`SPH ${fmtDeg(v.sph)} / CYL ${fmtDeg(v.cyl)}  —  ${fmtNum(v.price)} ${currencySymbol}  (متاح: ${v.quantity})`}
+                    </option>
+                  ))}
+              </select>
+            )}
+            {selectedODLens && (
               <p className="mt-1.5 text-sm font-semibold text-blue-700 dark:text-blue-400">
                 السعر: {fmtNum(odPrice)} {currencySymbol}
               </p>
@@ -309,13 +340,25 @@ export default function GlassesSalePage() {
                 <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>
                 <label className="text-sm font-bold text-green-700 dark:text-green-400">عين يسرى (OS)</label>
               </div>
-              <select value={osLensId} onChange={e => setOsLensId(e.target.value)} className={selectClass}>
+              <select value={osLensId} onChange={e => { setOsLensId(e.target.value); setOsVariantId('') }} className={selectClass}>
                 <option value="">— بدون عدسة —</option>
                 {lenses.map(l => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
               </select>
-              {selectedOS && (
+              {selectedOSLens && (
+                <select value={osVariantId} onChange={e => setOsVariantId(e.target.value)} className={`${selectClass} mt-2 font-mono text-xs`}>
+                  <option value="">— اختر الدرجة —</option>
+                  {selectedOSLens.variants
+                    .sort((a, b) => a.sph - b.sph || a.cyl - b.cyl)
+                    .map(v => (
+                      <option key={v.id} value={v.id}>
+                        {`SPH ${fmtDeg(v.sph)} / CYL ${fmtDeg(v.cyl)}  —  ${fmtNum(v.price)} ${currencySymbol}  (متاح: ${v.quantity})`}
+                      </option>
+                    ))}
+                </select>
+              )}
+              {selectedOSLens && (
                 <p className="mt-1.5 text-sm font-semibold text-green-700 dark:text-green-400">
                   السعر: {fmtNum(osPrice)} {currencySymbol}
                 </p>
@@ -357,21 +400,21 @@ export default function GlassesSalePage() {
                 <span className="font-medium">{fmtNum(framePrice)} {currencySymbol}</span>
               </div>
             )}
-            {selectedOD && (
+            {selectedODLens && (
               <div className="flex justify-between text-blue-700 dark:text-blue-400">
-                <span>عين يمنى — {selectedOD.name}</span>
+                <span>عين يمنى — {selectedODLens.name}{selectedODVariant ? ` (SPH ${fmtDeg(selectedODVariant.sph)} / CYL ${fmtDeg(selectedODVariant.cyl)})` : ''}</span>
                 <span className="font-medium">{fmtNum(odPrice)} {currencySymbol}</span>
               </div>
             )}
-            {selectedOS && !sameForBothEyes && (
+            {selectedOSLens && !sameForBothEyes && (
               <div className="flex justify-between text-green-700 dark:text-green-400">
-                <span>عين يسرى — {selectedOS.name}</span>
+                <span>عين يسرى — {selectedOSLens.name}{selectedOSVariant ? ` (SPH ${fmtDeg(selectedOSVariant.sph)} / CYL ${fmtDeg(selectedOSVariant.cyl)})` : ''}</span>
                 <span className="font-medium">{fmtNum(osPrice)} {currencySymbol}</span>
               </div>
             )}
-            {sameForBothEyes && selectedOD && (
+            {sameForBothEyes && selectedODLens && (
               <div className="flex justify-between text-green-700 dark:text-green-400">
-                <span>عين يسرى — {selectedOD.name}</span>
+                <span>عين يسرى — {selectedODLens.name}{selectedODVariant ? ` (SPH ${fmtDeg(selectedODVariant.sph)} / CYL ${fmtDeg(selectedODVariant.cyl)})` : ''}</span>
                 <span className="font-medium">{fmtNum(odPrice)} {currencySymbol}</span>
               </div>
             )}
