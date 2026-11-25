@@ -112,6 +112,7 @@ export default function GlassesSalePage() {
   const [labNotes, setLabNotes] = useState('')
   const [saleDate] = useState(new Date().toISOString().slice(0, 10))
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     db.frames.filter(f => !f.deletedAt && (f.quantity ?? 0) > 0).toArray().then(setFrames)
@@ -155,6 +156,7 @@ export default function GlassesSalePage() {
     if (!frameId && !odLensId && !osLensId) { toast('يجب اختيار منتج واحد على الأقل', 'error'); return }
 
     setSaving(true)
+    setSaveError('')
     try {
       const items = []
       if (selectedFrame) {
@@ -222,7 +224,9 @@ export default function GlassesSalePage() {
       toast('تم إنشاء طلب النظارة بنجاح', 'success')
       navigate(`/sales/${sale.id}`)
     } catch (err) {
-      toast(`${t('common.error')}: ${err instanceof Error ? err.message : String(err)}`, 'error')
+      const msg = err instanceof Error ? err.message : String(err)
+      setSaveError(msg)
+      try { toast(`${t('common.error')}: ${msg}`, 'error') } catch { /* toast unavailable */ }
     } finally {
       setSaving(false)
     }
@@ -430,6 +434,14 @@ export default function GlassesSalePage() {
             </div>
           </div>
         </section>
+
+        {/* خطأ في الحفظ */}
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-xl px-4 py-3 text-sm">
+            <p className="font-semibold mb-1">حدث خطأ</p>
+            <p className="font-mono text-xs break-all">{saveError}</p>
+          </div>
+        )}
 
         {/* أزرار */}
         <div className="flex gap-3 justify-end pb-4">
