@@ -14,6 +14,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         cleanupOutdatedCaches: true,
         sourcemap: true,
+        skipWaiting: true,
+        clientsClaim: true,
       },
       manifest: {
         name: 'BarOpt – إدارة محلات النظارات',
