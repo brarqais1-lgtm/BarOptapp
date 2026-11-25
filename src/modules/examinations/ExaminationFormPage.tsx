@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
+import { DegreeSelect } from '../../components/ui/DegreeSelect'
 import { PageSpinner } from '../../components/ui/Spinner'
 import { useToast } from '../../contexts/ToastContext'
 import { ExaminationFormSchema, type ExaminationFormValues } from './schema'
@@ -121,6 +122,10 @@ function fmtNum(n: number | undefined): string {
   return n !== undefined ? String(n) : ''
 }
 
+function fmtDeg(n: number | undefined): string {
+  return n !== undefined ? n.toFixed(2) : ''
+}
+
 function toFormValues(f: FormState): ExaminationFormValues {
   return {
     examinationDate: f.examinationDate,
@@ -208,11 +213,11 @@ export function ExaminationFormPage() {
           examinationDate: exam.examinationDate.slice(0, 10),
           examinedBy: exam.examinedBy ?? '',
           examType: exam.examType ?? 'comprehensive',
-          reSphere: fmtNum(exam.reSphere), reCylinder: fmtNum(exam.reCylinder),
+          reSphere: fmtDeg(exam.reSphere), reCylinder: fmtDeg(exam.reCylinder),
           reAxis: fmtNum(exam.reAxis), reAdd: fmtNum(exam.reAdd),
           rePrismPower: fmtNum(exam.rePrismPower), rePrismBase: exam.rePrismBase ?? '',
           visualAcuityRight: exam.visualAcuityRight ?? '', rePd: fmtNum(exam.rePd),
-          leSphere: fmtNum(exam.leSphere), leCylinder: fmtNum(exam.leCylinder),
+          leSphere: fmtDeg(exam.leSphere), leCylinder: fmtDeg(exam.leCylinder),
           leAxis: fmtNum(exam.leAxis), leAdd: fmtNum(exam.leAdd),
           lePrismPower: fmtNum(exam.lePrismPower), lePrismBase: exam.lePrismBase ?? '',
           visualAcuityLeft: exam.visualAcuityLeft ?? '', lePd: fmtNum(exam.lePd),
@@ -369,11 +374,11 @@ export function ExaminationFormPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">SPH</label>
-                  <NumField value={form.reSphere} onChange={v => set('reSphere', v)} />
+                  <DegreeSelect value={form.reSphere} onChange={v => set('reSphere', v)} min={-20} max={20} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">CYL</label>
-                  <NumField value={form.reCylinder} onChange={v => set('reCylinder', v)} />
+                  <DegreeSelect value={form.reCylinder} onChange={v => set('reCylinder', v)} min={-10} max={10} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">AXIS</label>
@@ -392,11 +397,11 @@ export function ExaminationFormPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">SPH</label>
-                  <NumField value={form.leSphere} onChange={v => set('leSphere', v)} />
+                  <DegreeSelect value={form.leSphere} onChange={v => set('leSphere', v)} min={-20} max={20} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">CYL</label>
-                  <NumField value={form.leCylinder} onChange={v => set('leCylinder', v)} />
+                  <DegreeSelect value={form.leCylinder} onChange={v => set('leCylinder', v)} min={-10} max={10} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">AXIS</label>
