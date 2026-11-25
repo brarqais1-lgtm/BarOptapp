@@ -55,12 +55,12 @@ async function mkFrame(overrides: Record<string, unknown> = {}) {
 
 async function mkLens(overrides: Record<string, unknown> = {}) {
   return createLens({
-    sku: `LNS-${uuidv4().slice(0, 8)}`,
-    brand: 'LensBrand',
+    name: `Lens-${uuidv4().slice(0, 8)}`,
     lensType: 'single_vision',
-    coatings: [],
+    notes: '',
+    variants: [{ sph: 0, cyl: 0, quantity: 0, price: 50 }],
     ...overrides,
-  }, db)
+  } as Parameters<typeof createLens>[0], db)
 }
 
 const TODAY = new Date().toISOString().slice(0, 10)

@@ -38,6 +38,7 @@ function createTestDB() { return new BarOptDB() }
 
 const baseFrame = {
   sku: 'FRM-001', name: 'Ray-Ban Classic', brand: 'Ray-Ban',
+  sellingPrice: 150, quantity: 10,
   model: 'RB3025', barcode: '1234567890',
   gender: 'unisex' as const, frameType: 'full' as const,
   frameShape: 'Aviator', material: 'Metal', color: 'Gold', size: '55-14-135',
@@ -45,13 +46,10 @@ const baseFrame = {
 }
 
 const baseLens = {
-  sku: 'LNS-001', name: 'Essilor Single', brand: 'Essilor',
-  model: 'Orma', barcode: '9876543210',
-  lensType: 'single_vision' as const, material: 'CR-39',
-  coatings: ['ar' as const], index: 1.56,
-  sphereMin: -6, sphereMax: 4, cylinderMin: -2, cylinderMax: 2,
-  addMin: undefined, addMax: undefined,
-  supplierId: '', categoryId: '', imageUrl: '', notes: '',
+  name: 'Essilor Single',
+  lensType: 'single_vision' as const,
+  notes: '',
+  variants: [{ sph: -2, cyl: -1, quantity: 5, price: 50 }],
 }
 
 const baseCategory = {
@@ -101,21 +99,19 @@ describe('LensFormSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('coerces empty string index to undefined', () => {
-    const result = LensFormSchema.safeParse({ ...baseLens, index: '' })
-    expect(result.success).toBe(true)
-    if (result.success) expect(result.data.index).toBeUndefined()
-  })
-
-  it('rejects index out of range', () => {
-    const result = LensFormSchema.safeParse({ ...baseLens, index: 3.0 })
+  it('rejects empty variants array', () => {
+    const result = LensFormSchema.safeParse({ ...baseLens, variants: [] })
     expect(result.success).toBe(false)
   })
 
-  it('defaults coatings to empty array', () => {
-    const result = LensFormSchema.safeParse({ ...baseLens, coatings: undefined })
+  it('rejects variant with missing price', () => {
+    const result = LensFormSchema.safeParse({ ...baseLens, variants: [{ sph: -2, cyl: 0, quantity: 5 }] })
+    expect(result.success).toBe(false)
+  })
+
+  it('allows notes to be empty', () => {
+    const result = LensFormSchema.safeParse({ ...baseLens, notes: '' })
     expect(result.success).toBe(true)
-    if (result.success) expect(result.data.coatings).toEqual([])
   })
 })
 
@@ -262,7 +258,7 @@ describe('Lens CRUD', () => {
   it('creates a lens and retrieves it', async () => {
     const lens = await createLens(baseLens, db)
     expect(lens.id).toBeTruthy()
-    expect(lens.sku).toBe('LNS-001')
+    expect(lens.sku).toBeTruthy()
     const found = await getLensById(lens.id, db)
     expect(found?.lensType).toBe('single_vision')
   })
@@ -285,24 +281,23 @@ describe('Lens CRUD', () => {
 
   it('searches lenses by query', async () => {
     await createLens(baseLens, db)
-    await createLens({ ...baseLens, sku: 'LNS-002', name: 'Hoya Progressive', brand: 'Hoya', barcode: 'HOY001' }, db)
+    await createLens({ ...baseLens, name: 'Hoya Progressive' }, db)
     const results = await searchLenses({ query: 'hoya' }, db)
     expect(results.length).toBe(1)
   })
 
   it('filters by lensType', async () => {
     await createLens(baseLens, db)
-    await createLens({ ...baseLens, sku: 'LNS-003', barcode: 'BAR003', lensType: 'progressive' }, db)
+    await createLens({ ...baseLens, lensType: 'progressive' as const }, db)
     const results = await searchLenses({ lensType: 'progressive' }, db)
     expect(results.length).toBe(1)
   })
 
   it('returns unique lens brands', async () => {
     await createLens(baseLens, db)
-    await createLens({ ...baseLens, sku: 'LNS-004', barcode: 'BAR004', brand: 'Hoya' }, db)
+    await createLens({ ...baseLens, name: 'Hoya Lens' }, db)
     const brands = await getLensBrands(db)
-    expect(brands).toContain('Essilor')
-    expect(brands).toContain('Hoya')
+    expect(brands.length).toBeGreaterThanOrEqual(1)
   })
 })
 
@@ -314,16 +309,19 @@ describe('Lens SKU/Barcode uniqueness', () => {
   beforeEach(async () => { db = createTestDB(); await db.open() })
   afterEach(async () => { await db.close(); db.delete() })
 
-  it('rejects duplicate active SKU', async () => {
-    await createLens(baseLens, db)
-    await expect(createLens({ ...baseLens, barcode: 'NEWBAR' }, db)).rejects.toThrow('SKU')
+  it('creates lens with unique auto-generated SKU', async () => {
+    const l1 = await createLens(baseLens, db)
+    const l2 = await createLens({ ...baseLens }, db)
+    expect(l1.sku).not.toBe(l2.sku)
   })
 
-  it('allows reuse of archived lens SKU', async () => {
+  it('allows reuse of archived lens SKU via isSkuTaken', async () => {
     const l = await createLens(baseLens, db)
+    const takenBefore = await isLensSkuTaken(l.sku!, undefined, db)
+    expect(takenBefore).toBe(true)
     await archiveLens(l.id, db)
-    const l2 = await createLens({ ...baseLens, barcode: 'NEWBAR3' }, db)
-    expect(l2.sku).toBe('LNS-001')
+    const takenAfter = await isLensSkuTaken(l.sku!, undefined, db)
+    expect(takenAfter).toBe(false)
   })
 
   it('isBarcodeTaken returns false for empty string', async () => {

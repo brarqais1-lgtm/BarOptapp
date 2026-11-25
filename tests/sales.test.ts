@@ -44,12 +44,10 @@ async function mkFrame(qty = 10, price = 100) {
 
 async function mkLens(qty = 20, price = 200) {
   const lens = await createLens({
-    sku: `LNS-${uuidv4().slice(0, 8)}`,
-    brand: 'LensCo',
+    name: `Lens-${uuidv4().slice(0, 8)}`,
     lensType: 'single_vision',
-    coatings: [],
-    sellingPrice: price,
-    quantity: qty,
+    notes: '',
+    variants: [{ sph: 0, cyl: 0, quantity: qty, price }],
   }, db)
   await db.lenses.update(lens.id, { quantity: qty })
   return lens

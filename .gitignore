@@ -5,3 +5,6 @@ dist/
 *.log
 generator.html
 dev-dist/
+
+.vercel
+.env*

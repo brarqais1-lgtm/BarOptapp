@@ -13,9 +13,8 @@ export const FrameFormSchema = z.object({
     v => (v === '' || v == null ? undefined : Number(v)),
     z.number().int().min(0, 'الكمية يجب أن تكون 0 أو أكثر'),
   ),
-  // kept optional for backwards compat (edit existing frames)
-  sku:         optStr(),
-  brand:       optStr(),
+  sku:         z.string().min(1, 'رمز المنتج مطلوب').max(60),
+  brand:       z.string().min(1, 'الماركة مطلوبة').max(80),
   model:       optStr(),
   barcode:     optStr(),
   gender:      z.enum(['male', 'female', 'unisex', 'kids']).optional(),

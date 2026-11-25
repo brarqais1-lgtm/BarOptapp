@@ -18,6 +18,7 @@ export const MIGRATIONS: Record<number, string> = {
   8: 'Sales: extend sales (saleDate, paymentStatus, walkInName, unique saleNumber); extend saleItems (returnedQty, sku); add saleReturns, saleReturnItems tables',
   9: 'Orders: extend sales (readyDate, labNotes) for glasses order management; add readyDate index',
   10: 'Expenses: add expenseNumber (unique) and paymentMethod fields; add unique expenseNumber index',
+  11: 'Catalog: add lensVariants table for per-degree lens stock management',
 }
 
 export const CURRENT_DB_VERSION = 11

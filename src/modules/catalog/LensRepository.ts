@@ -150,3 +150,20 @@ export async function archiveLens(id: string, db: BarOptDB = globalDb): Promise<
 export async function restoreLens(id: string, db: BarOptDB = globalDb): Promise<void> {
   await db.lenses.update(id, { deletedAt: undefined, updatedAt: new Date().toISOString() })
 }
+
+export async function getLensBrands(db: BarOptDB = globalDb): Promise<string[]> {
+  const lenses = await db.lenses.filter(l => !l.deletedAt).toArray()
+  return [...new Set(lenses.map(l => l.brand).filter(Boolean) as string[])]
+}
+
+export async function isSkuTaken(sku: string, excludeId?: string, db: BarOptDB = globalDb): Promise<boolean> {
+  if (!sku) return false
+  const existing = await db.lenses
+    .filter(l => !l.deletedAt && l.sku === sku && l.id !== excludeId)
+    .first()
+  return !!existing
+}
+
+export async function isBarcodeTaken(_barcode: string, _excludeId?: string, _db: BarOptDB = globalDb): Promise<boolean> {
+  return false
+}

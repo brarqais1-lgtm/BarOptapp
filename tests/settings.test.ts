@@ -128,10 +128,10 @@ describe('getClinicSettings', () => {
 // ── 6. getFinancialSettings ───────────────────────────────────────────────────
 
 describe('getFinancialSettings', () => {
-  it('returns default currency SAR and tax rate 15 when unset', async () => {
+  it('returns default currency IQD and tax rate 0 when unset', async () => {
     const result = await getFinancialSettings(db)
-    expect(result.currency).toBe('SAR')
-    expect(result.tax_rate).toBe('15')
+    expect(result.currency).toBe('IQD')
+    expect(result.tax_rate).toBe('0')
   })
 
   it('returns saved financial settings', async () => {

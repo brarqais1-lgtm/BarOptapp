@@ -164,8 +164,8 @@ describe('getExpenseStats', () => {
 // ── 6. DB version ─────────────────────────────────────────────────────────────
 
 describe('database version', () => {
-  it('CURRENT_DB_VERSION is 10', async () => {
+  it('CURRENT_DB_VERSION is 11', async () => {
     const { CURRENT_DB_VERSION } = await import('../src/database/migrations/index')
-    expect(CURRENT_DB_VERSION).toBe(10)
+    expect(CURRENT_DB_VERSION).toBe(11)
   })
 })
