@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
+import { DegreeSelect } from '../../components/ui/DegreeSelect'
 import { FormField } from '../../components/ui/FormField'
 import { PageSpinner } from '../../components/ui/Spinner'
 import { useToast } from '../../contexts/ToastContext'
@@ -211,30 +212,22 @@ export function LensFormPage() {
             {variants.map((v, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_80px_90px_32px] gap-2 items-start">
                 <div>
-                  <input
-                    type="number"
+                  <DegreeSelect
                     value={v.sph}
-                    onChange={e => setVariantField(i, 'sph', e.target.value)}
-                    step="0.25"
-                    min="-30"
-                    max="30"
-                    className={`form-input text-center font-mono text-sm ${errors[`v${i}_sph`] ? 'border-red-400' : ''}`}
-                    placeholder="0.00"
-                    dir="ltr"
+                    onChange={val => setVariantField(i, 'sph', val)}
+                    min={-20}
+                    max={20}
+                    hasError={!!errors[`v${i}_sph`]}
                   />
                   {errors[`v${i}_sph`] && <p className="text-red-500 text-xs mt-0.5">{errors[`v${i}_sph`]}</p>}
                 </div>
                 <div>
-                  <input
-                    type="number"
+                  <DegreeSelect
                     value={v.cyl}
-                    onChange={e => setVariantField(i, 'cyl', e.target.value)}
-                    step="0.25"
-                    min="-10"
-                    max="10"
-                    className={`form-input text-center font-mono text-sm ${errors[`v${i}_cyl`] ? 'border-red-400' : ''}`}
-                    placeholder="0.00"
-                    dir="ltr"
+                    onChange={val => setVariantField(i, 'cyl', val)}
+                    min={-10}
+                    max={10}
+                    hasError={!!errors[`v${i}_cyl`]}
                   />
                   {errors[`v${i}_cyl`] && <p className="text-red-500 text-xs mt-0.5">{errors[`v${i}_cyl`]}</p>}
                 </div>

@@ -53,7 +53,12 @@ export function FrameFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const parsed = FrameFormSchema.safeParse(values)
+    // auto-generate SKU if the user left it blank
+    const submitValues = {
+      ...values,
+      sku: values.sku.trim() || `FRM-${Date.now()}`,
+    }
+    const parsed = FrameFormSchema.safeParse(submitValues)
     if (!parsed.success) {
       const errs: typeof errors = {}
       parsed.error.issues.forEach(i => { if (i.path.length) errs[String(i.path[0]) as keyof FrameFormValues] = i.message })
@@ -96,9 +101,14 @@ export function FrameFormPage() {
           <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3">{serverError}</div>
         )}
 
-        <FormField label="اسم المنتج" required error={errors.name}>
-          <input value={values.name} onChange={set('name')} className="form-input" placeholder="مثال: راي بان كلاسيك" autoFocus />
-        </FormField>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="اسم المنتج" required error={errors.name}>
+            <input value={values.name} onChange={set('name')} className="form-input" placeholder="مثال: راي بان كلاسيك" autoFocus />
+          </FormField>
+          <FormField label="الماركة" required error={errors.brand}>
+            <input value={values.brand} onChange={set('brand')} className="form-input" placeholder="مثال: Ray-Ban, Oakley" dir="ltr" />
+          </FormField>
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <FormField label="السعر (د.ع)" required error={errors.sellingPrice}>
@@ -120,6 +130,51 @@ export function FrameFormPage() {
             />
           </FormField>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="الموديل" error={errors.model}>
+            <input value={values.model ?? ''} onChange={set('model')} className="form-input" placeholder="مثال: RB3025" dir="ltr" />
+          </FormField>
+          <FormField label="الباركود" error={errors.barcode}>
+            <input value={values.barcode ?? ''} onChange={set('barcode')} className="form-input" placeholder="اختياري" dir="ltr" />
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="الجنس" error={errors.gender}>
+            <select value={values.gender ?? ''} onChange={set('gender')} className="form-input">
+              <option value="">— كل الأجناس</option>
+              <option value="male">رجالي</option>
+              <option value="female">نسائي</option>
+              <option value="unisex">للجنسين</option>
+              <option value="kids">أطفال</option>
+            </select>
+          </FormField>
+          <FormField label="نوع الإطار" error={errors.frameType}>
+            <select value={values.frameType ?? ''} onChange={set('frameType')} className="form-input">
+              <option value="">— اختر النوع</option>
+              <option value="full">كامل</option>
+              <option value="half">نصف</option>
+              <option value="rimless">بلا إطار</option>
+            </select>
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField label="اللون" error={errors.color}>
+            <input value={values.color ?? ''} onChange={set('color')} className="form-input" placeholder="مثال: أسود" />
+          </FormField>
+          <FormField label="المادة" error={errors.material}>
+            <input value={values.material ?? ''} onChange={set('material')} className="form-input" placeholder="مثال: معدن" />
+          </FormField>
+          <FormField label="المقاس" error={errors.size}>
+            <input value={values.size ?? ''} onChange={set('size')} className="form-input" placeholder="مثال: 55-14-135" dir="ltr" />
+          </FormField>
+        </div>
+
+        <FormField label="ملاحظات" error={errors.notes}>
+          <textarea value={values.notes ?? ''} onChange={set('notes')} rows={2} className="form-input resize-none" />
+        </FormField>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={() => navigate('/frames')}>{t('common.cancel')}</Button>
