@@ -121,13 +121,11 @@ export function PatientProfilePage() {
 
       {/* Patient header */}
       <div className="no-print bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5">
+        {/* Top row: avatar + info */}
         <div className="flex items-start gap-4">
-          {/* Avatar */}
           <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xl shrink-0">
             {patient.fullName.charAt(0)}
           </div>
-
-          {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-slate-900 dark:text-white">{patient.fullName}</h1>
@@ -140,49 +138,51 @@ export function PatientProfilePage() {
               <span>{fmtDate(patient.createdAt)}</span>
             </div>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 shrink-0 flex-wrap">
-            {!patient.deletedAt && (
-              <Button size="sm" icon={<span>🕶</span>} onClick={() => navigate(`/glasses-sale/new?patientId=${patient.id}`)}>
-                بيع نظارة
-              </Button>
-            )}
-            <Button variant="secondary" size="sm" icon={<span>🖨</span>} onClick={handlePrint}>
-              {t('common.print')}
+        {/* Actions row — always below info on mobile */}
+        <div className="flex gap-2 flex-wrap mt-4 justify-end">
+          {!patient.deletedAt && (
+            <Button size="sm" icon={<span>🕶</span>} onClick={() => navigate(`/glasses-sale/new?patientId=${patient.id}`)}>
+              بيع نظارة
             </Button>
-            <Button variant="secondary" size="sm" icon={<span>✏️</span>} onClick={() => navigate(`/patients/${patient.id}/edit`)}>
-              {t('common.edit')}
+          )}
+          <Button variant="secondary" size="sm" icon={<span>🖨</span>} onClick={handlePrint}>
+            {t('common.print')}
+          </Button>
+          <Button variant="secondary" size="sm" icon={<span>✏️</span>} onClick={() => navigate(`/patients/${patient.id}/edit`)}>
+            {t('common.edit')}
+          </Button>
+          {patient.deletedAt ? (
+            <Button variant="secondary" size="sm" onClick={handleRestore}>
+              {t('common.restore')}
             </Button>
-            {patient.deletedAt ? (
-              <Button variant="secondary" size="sm" onClick={handleRestore}>
-                {t('common.restore')}
-              </Button>
-            ) : (
-              <Button variant="danger" size="sm" onClick={() => setArchiveDialogOpen(true)}>
-                {t('common.archive')}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button variant="danger" size="sm" onClick={() => setArchiveDialogOpen(true)}>
+              {t('common.archive')}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
       <div className="no-print">
-        <div className="flex overflow-x-auto gap-0.5 bg-slate-100 dark:bg-slate-900 rounded-2xl p-1 mb-5">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-max px-4 py-2 text-sm font-medium rounded-xl transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="overflow-x-auto pb-1 mb-5 -mx-1 px-1">
+          <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-900 rounded-2xl p-1 min-w-max w-full">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded-xl transition-colors whitespace-nowrap min-w-[72px] ${
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tab content */}
