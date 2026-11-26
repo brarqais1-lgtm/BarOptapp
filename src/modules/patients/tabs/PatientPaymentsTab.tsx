@@ -72,7 +72,7 @@ export function PatientPaymentsTab({ patient }: Props) {
                   {row.saleNumber}
                 </span>
                 <Badge variant={methodBadge[row.method] ?? 'gray'}>
-                  {t(`sales.paymentMethod.${row.method}`)}
+                  {t(`sales.payment.methods.${row.method}`)}
                 </Badge>
                 {row.reference && (
                   <span className="text-xs text-slate-400">#{row.reference}</span>

@@ -61,7 +61,7 @@ export function SalesTab({ patient }: Props) {
                 {t(`sales.status.${sale.status}`)}
               </Badge>
               <Badge variant={payBadge[sale.paymentStatus] ?? 'gray'}>
-                {t(`sales.paymentStatus.${sale.paymentStatus}`)}
+                {t(`sales.payment.${sale.paymentStatus}`)}
               </Badge>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">{sale.saleDate}</p>
