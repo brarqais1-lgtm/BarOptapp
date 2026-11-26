@@ -14,7 +14,7 @@ export const FrameFormSchema = z.object({
     z.number().int().min(0, 'الكمية يجب أن تكون 0 أو أكثر'),
   ),
   sku:         z.string().min(1, 'رمز المنتج مطلوب').max(60),
-  brand:       z.string().min(1, 'الماركة مطلوبة').max(80),
+  brand:       z.string().max(80).optional().or(z.literal('')),
   model:       optStr(),
   barcode:     optStr(),
   gender:      z.enum(['male', 'female', 'unisex', 'kids']).optional(),
