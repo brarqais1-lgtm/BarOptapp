@@ -1,7 +1,8 @@
 /** Format a number as currency */
 export function formatCurrency(amount: number, currency = 'IQD', locale = 'ar-IQ'): string {
   try {
-    return new Intl.NumberFormat(locale, {
+    // u-nu-latn forces Latin (Western) digits while keeping Arabic currency formatting
+    return new Intl.NumberFormat(`${locale}-u-nu-latn`, {
       style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
     }).format(amount)
   } catch {
@@ -11,7 +12,7 @@ export function formatCurrency(amount: number, currency = 'IQD', locale = 'ar-IQ
 
 /** Format a number with locale-aware separators */
 export function formatNumber(n: number, locale = 'ar-SA'): string {
-  return new Intl.NumberFormat(locale).format(n)
+  return new Intl.NumberFormat(`${locale}-u-nu-latn`).format(n)
 }
 
 /** Normalize a string for search (lowercase + trim) */
