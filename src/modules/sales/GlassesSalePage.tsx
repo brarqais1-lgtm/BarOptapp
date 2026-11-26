@@ -6,7 +6,8 @@ import { Button } from '../../components/ui/Button'
 import { useToast } from '../../contexts/ToastContext'
 import { useCurrency } from '../../hooks/useCurrency'
 import { createSale, confirmSale } from './SalesRepository'
-import type { Frame, Lens, LensVariant, Patient } from '../../database/schema'
+import { addPayment } from './PaymentsRepository'
+import type { Frame, Lens, LensVariant, Patient, PaymentMethod } from '../../database/schema'
 
 type LensWithVariants = Lens & { variants: LensVariant[] }
 
@@ -108,6 +109,8 @@ export default function GlassesSalePage() {
   const [osVariantId, setOsVariantId] = useState('')
   const [sameForBothEyes, setSameForBothEyes] = useState(false)
   const [discount, setDiscount] = useState(0)
+  const [paidNow, setPaidNow] = useState<number | ''>('')
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('cash')
   const [readyDate, setReadyDate] = useState('')
   const [labNotes, setLabNotes] = useState('')
   const [saleDate] = useState(new Date().toISOString().slice(0, 10))
@@ -221,6 +224,14 @@ export default function GlassesSalePage() {
         db
       )
       await confirmSale(sale.id, db)
+      const payAmount = paidNow === '' ? 0 : paidNow
+      if (payAmount > 0) {
+        await addPayment(sale.id, {
+          amount: payAmount,
+          method: payMethod,
+          paidAt: saleDate,
+        }, db)
+      }
       toast('تم إنشاء طلب النظارة بنجاح', 'success')
       navigate(`/sales/${sale.id}`)
     } catch (err) {
@@ -392,6 +403,54 @@ export default function GlassesSalePage() {
             <textarea value={labNotes} onChange={e => setLabNotes(e.target.value)} rows={2}
               className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
+        </section>
+
+        {/* الدفع */}
+        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">الدفع</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>المبلغ المدفوع ({currencySymbol})</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={total}
+                  step="0.01"
+                  placeholder="0.00"
+                  value={paidNow}
+                  onChange={e => setPaidNow(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
+                  className={selectClass}
+                />
+                {total > 0 && (paidNow === '' || (typeof paidNow === 'number' && paidNow < total)) && (
+                  <button
+                    type="button"
+                    onClick={() => setPaidNow(total)}
+                    className="shrink-0 px-3 py-2 text-xs font-semibold rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                  >
+                    كامل
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>طريقة الدفع</label>
+              <select value={payMethod} onChange={e => setPayMethod(e.target.value as PaymentMethod)} className={selectClass}>
+                <option value="cash">نقداً</option>
+                <option value="card">بطاقة</option>
+                <option value="transfer">تحويل</option>
+                <option value="cheque">شيك</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+          </div>
+          {typeof paidNow === 'number' && paidNow > 0 && total > 0 && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              متبقي: <span className={paidNow >= total ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-red-500 font-semibold'}>
+                {fmtNum(Math.max(0, total - paidNow))} {currencySymbol}
+              </span>
+            </p>
+          )}
         </section>
 
         {/* الملخص */}
