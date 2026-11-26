@@ -5,11 +5,12 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { PageSpinner } from '../../components/ui/Spinner'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
-import { EmptyTab } from './tabs/EmptyTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { NotesTab } from './tabs/NotesTab'
 import { ExaminationsTab } from './tabs/ExaminationsTab'
 import { MedicalHistoryTab } from './tabs/MedicalHistoryTab'
+import { SalesTab } from './tabs/SalesTab'
+import { PatientPaymentsTab } from './tabs/PatientPaymentsTab'
 import { PrintView } from './PrintView'
 import { useToast } from '../../contexts/ToastContext'
 import { archivePatient, restorePatient, updatePatient } from './PatientRepository'
@@ -204,20 +205,8 @@ export function PatientProfilePage() {
           {activeTab === 'medicalHistory' && (
             <MedicalHistoryTab patient={patient} />
           )}
-          {activeTab === 'purchases' && (
-            <EmptyTab
-              icon="🕶"
-              title={t('patients.purchases.empty')}
-              hint={t('patients.purchases.emptyHint')}
-            />
-          )}
-          {activeTab === 'payments' && (
-            <EmptyTab
-              icon="💳"
-              title={t('patients.payments.empty')}
-              hint={t('patients.payments.emptyHint')}
-            />
-          )}
+          {activeTab === 'purchases' && <SalesTab patient={patient} />}
+          {activeTab === 'payments' && <PatientPaymentsTab patient={patient} />}
           {activeTab === 'notes' && (
             <NotesTab notes={patient.notes ?? ''} onSave={handleSaveNotes} />
           )}
