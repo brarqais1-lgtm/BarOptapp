@@ -40,6 +40,7 @@ export function GlassesSaleModal({ patient, onClose, onComplete }: Props) {
   const [osVariantId, setOsVariantId] = useState('')
   const [sameForBothEyes, setSameForBothEyes] = useState(false)
   const [discount, setDiscount] = useState(0)
+  const [payFull, setPayFull] = useState(true)
   const [paidNow, setPaidNow] = useState<number | ''>('')
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash')
   const [readyDate, setReadyDate] = useState('')
@@ -78,6 +79,10 @@ export function GlassesSaleModal({ patient, onClose, onComplete }: Props) {
   const osPrice = sameForBothEyes ? odPrice : (selectedOSVariant?.price ?? selectedOSLens?.sellingPrice ?? 0)
   const subtotal = framePrice + odPrice + osPrice
   const total = Math.max(0, subtotal - discount)
+
+  useEffect(() => {
+    if (payFull) setPaidNow(total > 0 ? total : '')
+  }, [total, payFull])
 
   const handleSave = async () => {
     if (!frameId && !odLensId && !osLensId) { toast('يجب اختيار منتج واحد على الأقل', 'error'); return }
@@ -148,7 +153,7 @@ export function GlassesSaleModal({ patient, onClose, onComplete }: Props) {
         db
       )
       await confirmSale(sale.id, db)
-      const payAmount = paidNow === '' ? 0 : paidNow
+      const payAmount = payFull ? total : (paidNow === '' ? 0 : Number(paidNow))
       if (payAmount > 0) {
         await addPayment(sale.id, { amount: payAmount, method: payMethod, paidAt: saleDate }, db)
       }
@@ -303,21 +308,34 @@ export function GlassesSaleModal({ patient, onClose, onComplete }: Props) {
           {/* الدفع */}
           <section className="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">الدفع</h3>
+
+            {/* دفع كامل / جزئي */}
+            <div className="flex gap-2 mb-4">
+              <button type="button"
+                onClick={() => setPayFull(true)}
+                className={`flex-1 py-2 text-sm font-semibold rounded-xl border transition-colors ${payFull ? 'bg-green-600 text-white border-green-600' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-green-400'}`}>
+                دفع كامل المبلغ
+              </button>
+              <button type="button"
+                onClick={() => { setPayFull(false); setPaidNow('') }}
+                className={`flex-1 py-2 text-sm font-semibold rounded-xl border transition-colors ${!payFull ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-blue-400'}`}>
+                دفع جزئي / آجل
+              </button>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>المبلغ المدفوع ({currencySymbol})</label>
-                <div className="flex gap-2">
+                {payFull ? (
+                  <div className="px-3 py-2.5 text-sm rounded-xl border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 font-semibold">
+                    {fmtNum(total > 0 ? total : 0)}
+                  </div>
+                ) : (
                   <input type="number" min={0} max={total} step="0.01" placeholder="0.00"
                     value={paidNow}
                     onChange={e => setPaidNow(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                     className={selectClass} />
-                  {total > 0 && (paidNow === '' || (typeof paidNow === 'number' && paidNow < total)) && (
-                    <button type="button" onClick={() => setPaidNow(total)}
-                      className="shrink-0 px-3 py-2 text-xs font-semibold rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors">
-                      كامل
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
               <div>
                 <label className={labelClass}>طريقة الدفع</label>
@@ -330,7 +348,7 @@ export function GlassesSaleModal({ patient, onClose, onComplete }: Props) {
                 </select>
               </div>
             </div>
-            {typeof paidNow === 'number' && paidNow > 0 && total > 0 && (
+            {!payFull && typeof paidNow === 'number' && paidNow > 0 && total > 0 && (
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                 متبقي:{' '}
                 <span className={paidNow >= total ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-red-500 font-semibold'}>
