@@ -54,6 +54,22 @@ export default function SaleDetailPage() {
     return m
   }, [])
 
+  // labPrint effect must be before the early return to satisfy Rules of Hooks
+  useEffect(() => {
+    if (!labPrint) return
+    document.body.classList.add('lab-print-mode')
+    window.print()
+    const handler = () => {
+      document.body.classList.remove('lab-print-mode')
+      setLabPrint(false)
+    }
+    window.addEventListener('afterprint', handler, { once: true })
+    return () => {
+      document.body.classList.remove('lab-print-mode')
+      window.removeEventListener('afterprint', handler)
+    }
+  }, [labPrint])
+
   if (!sale) return <div className="p-4 text-gray-400">{t('common.loading')}</div>
 
   async function doConfirm() {
@@ -96,21 +112,6 @@ export default function SaleDetailPage() {
   }
 
   const isRtl = i18n.language === 'ar'
-
-  useEffect(() => {
-    if (!labPrint) return
-    document.body.classList.add('lab-print-mode')
-    window.print()
-    const handler = () => {
-      document.body.classList.remove('lab-print-mode')
-      setLabPrint(false)
-    }
-    window.addEventListener('afterprint', handler, { once: true })
-    return () => {
-      document.body.classList.remove('lab-print-mode')
-      window.removeEventListener('afterprint', handler)
-    }
-  }, [labPrint])
 
   return (
     <div className="p-4 space-y-4 max-w-4xl print:max-w-full print:p-0" dir={isRtl ? 'rtl' : 'ltr'}>
