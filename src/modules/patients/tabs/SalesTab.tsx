@@ -12,25 +12,26 @@ const payBadge: Record<string, BadgeVariant> = {
   unpaid: 'red', partial: 'yellow', paid: 'green',
 }
 
-interface Props { patient: Patient }
+interface Props { patient: Patient; refreshKey?: number }
 
 function fmtNum(n: number) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function SalesTab({ patient }: Props) {
+export function SalesTab({ patient, refreshKey }: Props) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [sales, setSales] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     db.sales
       .where('patientId').equals(patient.id)
       .reverse()
       .sortBy('saleDate')
       .then(list => { setSales(list); setLoading(false) })
-  }, [patient.id])
+  }, [patient.id, refreshKey])
 
   if (loading) return <div className="p-6 text-sm text-slate-400">{t('common.loading')}</div>
 

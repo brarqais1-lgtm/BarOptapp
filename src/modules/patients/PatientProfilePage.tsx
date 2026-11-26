@@ -11,6 +11,7 @@ import { ExaminationsTab } from './tabs/ExaminationsTab'
 import { MedicalHistoryTab } from './tabs/MedicalHistoryTab'
 import { SalesTab } from './tabs/SalesTab'
 import { PatientPaymentsTab } from './tabs/PatientPaymentsTab'
+import { GlassesSaleModal } from '../sales/GlassesSaleModal'
 import { PrintView } from './PrintView'
 import { useToast } from '../../contexts/ToastContext'
 import { archivePatient, restorePatient, updatePatient } from './PatientRepository'
@@ -38,6 +39,8 @@ export function PatientProfilePage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [showSaleModal, setShowSaleModal] = useState(false)
+  const [tabRefreshKey, setTabRefreshKey] = useState(0)
 
   const load = async () => {
     if (!id) return
@@ -144,7 +147,7 @@ export function PatientProfilePage() {
         {/* Actions row — always below info on mobile */}
         <div className="flex gap-2 flex-wrap mt-4 justify-end">
           {!patient.deletedAt && (
-            <Button size="sm" icon={<span>🕶</span>} onClick={() => navigate(`/glasses-sale/new?patientId=${patient.id}`)}>
+            <Button size="sm" icon={<span>🕶</span>} onClick={() => setShowSaleModal(true)}>
               بيع نظارة
             </Button>
           )}
@@ -205,13 +208,26 @@ export function PatientProfilePage() {
           {activeTab === 'medicalHistory' && (
             <MedicalHistoryTab patient={patient} />
           )}
-          {activeTab === 'purchases' && <SalesTab patient={patient} />}
-          {activeTab === 'payments' && <PatientPaymentsTab patient={patient} />}
+          {activeTab === 'purchases' && <SalesTab patient={patient} refreshKey={tabRefreshKey} />}
+          {activeTab === 'payments' && <PatientPaymentsTab patient={patient} refreshKey={tabRefreshKey} />}
           {activeTab === 'notes' && (
             <NotesTab notes={patient.notes ?? ''} onSave={handleSaveNotes} />
           )}
         </div>
       </div>
+
+      {/* Glasses sale modal */}
+      {showSaleModal && (
+        <GlassesSaleModal
+          patient={patient}
+          onClose={() => setShowSaleModal(false)}
+          onComplete={() => {
+            setShowSaleModal(false)
+            setTabRefreshKey(k => k + 1)
+            setActiveTab('purchases')
+          }}
+        />
+      )}
 
       {/* Archive confirm */}
       <ConfirmDialog

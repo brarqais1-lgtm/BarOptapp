@@ -14,19 +14,20 @@ interface PaymentRow extends Payment {
   saleId: string
 }
 
-interface Props { patient: Patient }
+interface Props { patient: Patient; refreshKey?: number }
 
 function fmtNum(n: number) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function PatientPaymentsTab({ patient }: Props) {
+export function PatientPaymentsTab({ patient, refreshKey }: Props) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [rows, setRows] = useState<PaymentRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     const load = async () => {
       const sales = await db.sales.where('patientId').equals(patient.id).toArray()
       const all: PaymentRow[] = []
@@ -41,7 +42,7 @@ export function PatientPaymentsTab({ patient }: Props) {
       setLoading(false)
     }
     load()
-  }, [patient.id])
+  }, [patient.id, refreshKey])
 
   if (loading) return <div className="p-6 text-sm text-slate-400">{t('common.loading')}</div>
 
